@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom"
-import { Home, AdminDashboard, StudentDashboard, TeacherDashboard, Unauthorized, NotFound } from './pages/index.js'
+import { Home,About,Contact, AdminDashboard, StudentDashboard, TeacherDashboard, Unauthorized, NotFound } from './pages/index.js'
 import RoleGuard from './components/guards/RoleGuard'
 import { ROLES } from './utils/constants'
 
@@ -14,6 +14,8 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path='/' element={<App />}>
       <Route index element={<Home />} />
+      <Route path='about' element={<About />} />
+      <Route path='contact' element={<Contact />} />
 
       <Route path='admin' element={<RoleGuard allowedRoles={[ROLES.ADMIN]} />}>
         <Route path='dashboard' element={<AdminDashboard />} />
