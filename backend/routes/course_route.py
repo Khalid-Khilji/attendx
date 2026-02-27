@@ -24,14 +24,14 @@ async def edit_course(
     course: CourseCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await update_course(course_id, course.dict())
+    return await update_course(current_user, course_id, course.dict())
 
 @router.delete("/delete/{course_id}")
 async def remove_course(
     course_id: str,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await delete_course(course_id)
+    return await delete_course(current_user, course_id)
 
 @router.get("/all")
 async def list_courses(

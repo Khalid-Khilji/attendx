@@ -2,6 +2,7 @@ from db.database import db
 from models.teacher_model import teacher_create_model, teacher_entity
 from controllers.user_controller import delete_user
 from utils.hash import hash_password
+from utils.logger import log_action
 import uuid
 from datetime import datetime
 
@@ -23,9 +24,6 @@ async def create_teacher(current_user, data):
     existing_user = await db.users.find_one({"email": email})
     if existing_user:
         return {"error": "User already exists"}
-
-    first_name = data["first_name"].lower()
-    last_name = data["last_name"].lower()
 
     first_name_cap = first_name.capitalize()
     last_name_cap = last_name.capitalize()
@@ -56,6 +54,14 @@ async def create_teacher(current_user, data):
 
     await db.teacher_details.insert_one(teacher_data)
 
+    await log_action(
+        current_user,
+        action_type="CREATE",
+        module="TEACHER",
+        resource_id=user_id,
+        message=f"Created teacher {first_name} {last_name}"
+    )
+
     return {
         "teacher": teacher_entity(teacher_data),
         "email": email,
@@ -68,14 +74,17 @@ async def delete_teacher(current_user, teacher_id: str):
     if not teacher:
         return {"error": "Teacher not found"}
 
-    await db.users.update_one(
-        {"user_id": teacher_id},
-        {"$set": {"is_active": False}}
+    result = await delete_user(current_user, teacher_id)
+
+    await log_action(
+        current_user,
+        action_type="DELETE",
+        module="TEACHER",
+        resource_id=teacher_id,
+        message=f"Disabled teacher {teacher['first_name']} {teacher['last_name']}"
     )
 
-    await db.teacher_details.delete_one({"_id": teacher_id})
-
-    return {"message": "Teacher disabled successfully"}
+    return result
 
 async def get_all_teachers():
 

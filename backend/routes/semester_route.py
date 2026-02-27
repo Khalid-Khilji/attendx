@@ -23,14 +23,14 @@ async def edit_semester(
     sem: SemesterCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await update_semester(sem_id, sem.dict())
+    return await update_semester(current_user, sem_id, sem.dict())
 
 @router.delete("/delete/{sem_id}")
 async def remove_semester(
     sem_id: str,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await delete_semester(sem_id)
+    return await delete_semester(current_user, sem_id)
 
 @router.get("/all")
 async def list_semesters(

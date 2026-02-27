@@ -1,5 +1,6 @@
 from db.database import db
 from models.course_model import course_create_model, course_entity
+from utils.logger import log_action
 
 async def create_course(current_user, data):
 
@@ -28,6 +29,14 @@ async def create_course(current_user, data):
 
     await db.courses.insert_one(course_data)
 
+    await log_action(
+        current_user,
+        action_type="CREATE",
+        module="COURSE",
+        resource_id=course_data["_id"],
+        message=f"Created course {course_data['name']}"
+    )
+
     return course_entity(course_data)
 
 async def update_course(course_id: str, data):
@@ -45,17 +54,33 @@ async def update_course(course_id: str, data):
         }}
     )
 
+    await log_action(
+        current_user=data.get("current_user") if "current_user" in data else None,
+        action_type="UPDATE",
+        module="COURSE",
+        resource_id=course_id,
+        message=f"Updated course {data['name'].lower()}"
+    )
+
     updated = await db.courses.find_one({"_id": course_id})
 
     return course_entity(updated)
 
-async def delete_course(course_id: str):
+async def delete_course(course_id: str, current_user):
 
     course = await db.courses.find_one({"_id": course_id})
     if not course:
         return {"error": "Course not found"}
 
     await db.courses.delete_one({"_id": course_id})
+
+    await log_action(
+        current_user,
+        action_type="DELETE",
+        module="COURSE",
+        resource_id=course_id,
+        message=f"Deleted course {course['name']}"
+    )
 
     return {"message": "Course deleted successfully"}
 

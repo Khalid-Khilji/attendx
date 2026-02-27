@@ -23,14 +23,15 @@ async def edit_department(
     dept: DepartmentCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await update_department(dept_id, dept.dict())
+    return await update_department(current_user, dept_id, dept.dict())
+
 
 @router.delete("/delete/{dept_id}")
 async def remove_department(
     dept_id: str,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await delete_department(dept_id)
+    return await delete_department(current_user, dept_id)
 
 @router.get("/all")
 async def list_departments(
