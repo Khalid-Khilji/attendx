@@ -1,40 +1,81 @@
+import { motion } from 'motion/react'
 import { LogOut, AlertTriangle } from 'lucide-react'
 import { Modal, Button } from '../index'
+import useAuthStore from '../../stores/auth'
+import { toast } from 'react-toastify'
 
-const Logout = ({ isOpen, onClose, onConfirm }) => {
+const Logout = ({ isOpen, onClose }) => {
+  const { logout } = useAuthStore()
+
+  const handleLogout = () => {
+    logout()
+    onClose()
+    toast.success('Logged out successfully', {
+      autoClose: 2000,
+      theme: "colored",
+    })
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Confirm Logout" size="sm">
-      <div className="flex flex-col items-center py-4">
-        <div className="h-16 w-16 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 mb-4">
+    <Modal isOpen={isOpen} onClose={onClose} size="sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center py-2"
+      >
+        <motion.div
+          initial={{ rotate: -10 }}
+          animate={{ rotate: [0, -10, 10, -10, 0] }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="h-16 w-16 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-red-600 mb-6"
+        >
           <AlertTriangle size={32} />
-        </div>
-        
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Oh no! You're leaving?</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mt-2 px-6">
-          Are you sure you want to log out from Attendx? You will need to login again to access your dashboard.
-        </p>
+        </motion.div>
 
-        <div className="flex flex-col w-full gap-3 mt-8">
-          <Button 
-            variant="danger" 
-            size="md" 
-            onClick={onConfirm}
-            className="w-full rounded-xl py-6 font-bold shadow-lg shadow-red-500/20"
-          >
-            <LogOut size={18} className="mr-2" />
-            Yes, Log Me Out
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="md" 
+        <motion.h3
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-xl font-bold text-gray-900 dark:text-white"
+        >
+          Confirm Logout
+        </motion.h3>
+
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2 px-4 leading-relaxed"
+        >
+          Are you sure you want to leave? Any unsaved changes might be lost.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-center justify-center gap-3 mt-10 w-full"
+        >
+          <Button
+            variant="ghost"
+            size="md"
             onClick={onClose}
-            className="w-full rounded-xl font-bold text-zinc-500"
+            className="flex-1 rounded-xl font-bold"
           >
             Cancel
           </Button>
-        </div>
-      </div>
+
+          <Button
+            variant="danger"
+            size="md"
+            onClick={handleLogout}
+            icon={LogOut}
+            className="flex-1 rounded-xl font-bold shadow-lg shadow-red-500/20"
+          >
+            Logout
+          </Button>
+        </motion.div>
+      </motion.div>
     </Modal>
   )
 }

@@ -25,6 +25,9 @@ async def login_user(data):
     if not user:
         return {"error": "Invalid credentials"}
 
+    if not user.get("is_active", True):
+        return {"error": "Account disabled"}
+
     if not verify_password(data["password"], user["password"]):
         return {"error": "Invalid credentials"}
 
@@ -35,5 +38,30 @@ async def login_user(data):
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user": {
+            "user_id": user["user_id"],
+            "email": user["email"],
+            "role": user["role"],
+            "created_at": user["created_at"]
+        }
     }
+
+async def delete_user(current_user, user_id: str):
+
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        return {"error": "User not found"}
+
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"is_active": False}}
+    )
+
+    if user["role"] == "teacher":
+        await db.teacher_details.delete_one({"user_id": user_id})
+
+    if user["role"] == "student":
+        await db.student_details.delete_one({"user_id": user_id})
+
+    return {"message": "User disabled successfully"}

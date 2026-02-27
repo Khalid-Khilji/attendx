@@ -1,58 +1,69 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 
-const Input = ({ 
-  label, 
+const Input = ({
+  label,
   name,
-  type = 'text', 
-  value, 
-  onChange, 
-  onBlur, 
-  error, 
-  placeholder, 
+  type = 'text',
+  value,
+  onChange,
+  onBlur,
+  error,
+  placeholder,
   className = '',
   icon: Icon,
-  ...props 
+  ...props
 }) => {
+  const [showPassword, setShowPassword] = useState(false)
+  const isPassword = type === 'password'
+
   return (
     <div className={`flex flex-col gap-1 w-full ${className}`}>
       {label && (
-        <label 
-          htmlFor={name}
-          className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1"
-        >
+        <label htmlFor={name} className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1">
           {label}
         </label>
       )}
-      
-      <div className="relative">
+
+      <div className="relative group">
         {Icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-violet-500 transition-colors">
             <Icon size={18} />
           </div>
         )}
-        
+
         <input
           id={name}
           name={name}
-          type={type}
+          type={isPassword ? (showPassword ? 'text' : 'password') : type}
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
           className={`
-            w-full rounded-xl border px-4 py-2.5 text-sm
-            transition-colors outline-none
-            text-black dark:text-white
+            w-full rounded-xl border px-4 py-2.5 text-sm transition-all outline-none
+            text-black dark:text-white bg-white dark:bg-gray-900
             placeholder:text-gray-400 dark:placeholder:text-gray-500
-            ${Icon ? 'pl-10' : ''}
-            ${error 
-              ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 focus:border-red-500' 
-              : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 focus:border-violet-600 dark:focus:border-violet-400'
+            ${Icon ? 'pl-11' : ''}
+            ${isPassword ? 'pr-11' : ''}
+            ${error
+              ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 focus:border-red-500'
+              : 'border-gray-200 dark:border-gray-800 focus:border-violet-600 dark:focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5'
             }
           `}
           {...props}
         />
+
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
       </div>
 
       <AnimatePresence>
@@ -61,9 +72,9 @@ const Input = ({
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="flex items-center gap-1 text-red-500 text-xs ml-1"
+            className="flex items-center gap-1 text-red-500 text-[11px] font-bold ml-1 mt-0.5"
           >
-            <AlertCircle size={12} />
+            <AlertCircle size={12} strokeWidth={3} />
             <span>{error}</span>
           </motion.div>
         )}

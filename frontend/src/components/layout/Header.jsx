@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Menu, X, Sun, Moon, LogOut, LayoutDashboard, ClipboardCheck, GraduationCap, Users } from 'lucide-react'
+import { Menu, X, Sun, Moon, LogOut, LayoutDashboard, ClipboardCheck, GraduationCap, Users, UserCog, Settings } from 'lucide-react'
 import { Button, Login, Logout } from '../index'
 import { ROLES } from '../../utils/constants'
 import useAuthStore from '../../stores/auth'
@@ -22,115 +22,112 @@ const Header = () => {
     navigate('/')
   }
 
-  const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'About', path: '/about' },
-    { name: 'Contact', path: '/contact' },
-  ]
+  const getNavLinks = () => {
+    if (!user) {
+      return [
+        { name: 'Home', path: '/' },
+        { name: 'About', path: '/about' },
+        { name: 'Contact', path: '/contact' },
+      ]
+    }
 
-  const getRoleLinks = () => {
-    if (user?.role === ROLES.ADMIN) return [
-      { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-      { name: 'Teachers', path: '/admin/teachers', icon: Users },
-      { name: 'Students', path: '/admin/students', icon: GraduationCap }
-    ]
-    if (user?.role === ROLES.TEACHER) return [
-      { name: 'Portal', path: '/teacher/dashboard', icon: LayoutDashboard },
-      { name: 'Attendance', path: '/teacher/attendance', icon: ClipboardCheck }
-    ]
-    return [
-      { name: 'My Attendance', path: '/student/dashboard', icon: LayoutDashboard }
-    ]
+    if (user?.role === ROLES.ADMIN) {
+      return [
+        { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Teachers', path: '/admin/teachers', icon: Users },
+        { name: 'Students', path: '/admin/students', icon: GraduationCap },
+        { name: 'Settings', path: '/admin/settings', icon: Settings },
+      ]
+    }
+    
+    if (user?.role === ROLES.TEACHER) {
+      return [
+        { name: 'Dashboard', path: '/teacher/dashboard', icon: LayoutDashboard },
+        { name: 'Take Attendance', path: '/teacher/attendance', icon: ClipboardCheck },
+        { name: 'Students', path: '/teacher/students', icon: GraduationCap },
+      ]
+    }
+    
+    if (user?.role === ROLES.STUDENT) {
+      return [
+        { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
+        { name: 'My Attendance', path: '/student/attendance', icon: ClipboardCheck },
+        { name: 'Profile', path: '/student/profile', icon: UserCog },
+      ]
+    }
+
+    return []
   }
 
-  const roleLinks = getRoleLinks()
+  const navLinks = getNavLinks()
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-100 w-full p-3 md:p-6">
-        <nav className="mx-auto max-w-7xl rounded-xl md:rounded-3xl border border-zinc-200/50 bg-white/80 shadow-lg backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-950/80">
-          <div className="flex h-14 md:h-18 items-center justify-between px-4 md:px-8">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full px-4 py-3 md:px-6 md:py-4">
+        <nav className="mx-auto max-w-7xl rounded-2xl border border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-xl dark:border-gray-800/50 dark:bg-gray-950/80">
+          <div className="flex h-14 items-center justify-between px-4 md:px-6">
 
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="bg-violet-600 p-1.5 rounded-lg text-white">
-                <GraduationCap size={18} className="md:w-6 md:h-6" />
+            <Link to="/" className="flex items-center gap-2">
+              <div className="rounded-lg bg-violet-600 p-1.5 text-white">
+                <GraduationCap size={20} />
               </div>
-              <span className="text-lg md:text-2xl font-black tracking-tight dark:text-white uppercase">
+              <span className="text-lg font-bold uppercase tracking-tight dark:text-white">
                 Attend<span className="text-violet-600">x</span>
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-1 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50">
+            <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
                 <NavLink
-                  key={link.name}
+                  key={link.path}
                   to={link.path}
                   className={({ isActive }) =>
-                    `relative px-5 py-1.5 text-sm font-bold transition-all duration-300 rounded-xl ${isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    `px-4 py-2 text-sm font-medium transition-colors rounded-lg flex items-center gap-2 ${
+                      isActive 
+                        ? 'bg-violet-600 text-white' 
+                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
                     }`
                   }
                 >
-                  {({ isActive }) => (
-                    <>
-                      <span className="relative z-10">{link.name}</span>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-pill"
-                          className="absolute inset-0 bg-violet-600 rounded-xl shadow-md"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                    </>
-                  )}
+                  {link.icon && <link.icon size={16} />}
+                  {link.name}
                 </NavLink>
               ))}
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
+              <button
                 onClick={toggleMode}
-                className="rounded-lg md:rounded-2xl h-9 w-9 md:h-11 md:w-11 p-0 border border-zinc-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/50 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-400 dark:hover:bg-gray-800"
               >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={isDark ? 'dark' : 'light'}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                  >
-                    {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-violet-600" />}
-                  </motion.div>
-                </AnimatePresence>
-              </Button>
+                {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
 
               <div className="hidden sm:flex items-center gap-2">
                 {user ? (
-                  <div className="flex items-center gap-1 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-xl">
-                    <NavLink to={roleLinks[0].path} className="px-4 py-1.5 rounded-lg text-sm font-bold bg-violet-600 text-white">
-                      Dashboard
-                    </NavLink>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setIsLogoutOpen(true)} // Open Logout Modal
-                      className="rounded-lg h-8 w-8 p-0"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsLogoutOpen(true)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
                     >
-                      <LogOut size={14} />
-                    </Button>
+                      <LogOut size={16} />
+                    </button>
                   </div>
                 ) : (
-                  <Button onClick={() => setIsLoginOpen(true)} variant="primary" size="sm" className="rounded-xl px-6 font-bold bg-violet-600 border-none">
+                  <button
+                    onClick={() => setIsLoginOpen(true)}
+                    className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-700"
+                  >
                     Login
-                  </Button>
+                  </button>
                 )}
               </div>
 
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
+                className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white/50 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-400 dark:hover:bg-gray-800"
               >
-                {isOpen ? <X size={20} /> : <Menu size={20} />}
+                {isOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
             </div>
           </div>
@@ -141,39 +138,49 @@ const Header = () => {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="md:hidden border-t border-zinc-100 dark:border-zinc-800 overflow-hidden"
+                className="md:hidden border-t border-gray-100 dark:border-gray-800 overflow-hidden"
               >
-                <div className="flex flex-col gap-1 p-3">
+                <div className="flex flex-col p-3 space-y-1">
                   {navLinks.map((link) => (
                     <NavLink
-                      key={link.name}
+                      key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
                       className={({ isActive }) =>
-                        `rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${isActive ? 'bg-violet-600 text-white shadow-md' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900'
+                        `px-4 py-2.5 text-sm font-medium rounded-lg flex items-center gap-3 ${
+                          isActive 
+                            ? 'bg-violet-600 text-white' 
+                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-900'
                         }`
                       }
                     >
+                      {link.icon && <link.icon size={16} />}
                       {link.name}
                     </NavLink>
                   ))}
 
-                  <div className="mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+                  <div className="pt-3 mt-2 border-t border-gray-100 dark:border-gray-800">
                     {user ? (
-                      <>
-                        {roleLinks.map((r) => (
-                          <NavLink key={r.path} to={r.path} onClick={() => setIsOpen(false)} className={({ isActive }) => `flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${isActive ? 'bg-violet-600 text-white' : 'text-zinc-600 dark:text-zinc-400'}`}>
-                            <r.icon size={16} /> {r.name}
-                          </NavLink>
-                        ))}
-                        <Button variant="danger" className="w-full h-10 rounded-lg text-xs font-bold" onClick={() => setIsLogoutOpen(true)}>
-                          Logout
-                        </Button>
-                      </>
+                      <button
+                        onClick={() => {
+                          setIsOpen(false)
+                          setIsLogoutOpen(true)
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 rounded-lg"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
                     ) : (
-                      <Button onClick={() => { setIsOpen(false); setIsLoginOpen(true); }} className="w-full h-10 rounded-lg text-sm font-bold shadow-md">
-                        Login Now
-                      </Button>
+                      <button
+                        onClick={() => {
+                          setIsOpen(false)
+                          setIsLoginOpen(true)
+                        }}
+                        className="w-full rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700"
+                      >
+                        Login
+                      </button>
                     )}
                   </div>
                 </div>
@@ -184,11 +191,7 @@ const Header = () => {
       </header>
 
       <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      <Logout
-        isOpen={isLogoutOpen}
-        onClose={() => setIsLogoutOpen(false)}
-        onConfirm={handleLogoutConfirm}
-      />
+      <Logout isOpen={isLogoutOpen} onClose={() => setIsLogoutOpen(false)} onConfirm={handleLogoutConfirm} />
     </>
   )
 }

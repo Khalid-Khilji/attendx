@@ -1,7 +1,7 @@
 export const ROLES = {
-    ADMIN: 'ADMIN',
-    STAFF: 'STAFF',
-    STUDENT: 'STUDENT'
+    ADMIN: 'admin',
+    TEACHER: 'teacher',
+    STUDENT: 'student'
 };
 
 export const ATTENDANCE_STATUS = {

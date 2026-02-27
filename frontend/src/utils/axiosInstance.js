@@ -1,5 +1,5 @@
 import axios from 'axios';
-import useAuthStore from '../store/useAuthStore';
+import useAuthStore from '../stores/auth';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
@@ -12,7 +12,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const state = useAuthStore.getState();
-        const token = state.user?.token;
+        const token = state.token;
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -29,6 +29,7 @@ axiosInstance.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             useAuthStore.getState().logout();
+            window.location.href = '/'; 
         }
         return Promise.reject(error);
     }

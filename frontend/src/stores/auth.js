@@ -5,17 +5,30 @@ const useAuthStore = create(
     persist(
         (set) => ({
             user: null,
+            token: null,
             isAuthenticated: false,
 
-            login: (userData) => set({
+            setToken: (token) => set({ token }),
+
+            setUser: (userData) => set({
                 user: userData,
+                isAuthenticated: !!userData
+            }),
+
+            login: (userData, token) => set({
+                user: userData,
+                token: token,
                 isAuthenticated: true
             }),
 
-            logout: () => set({
-                user: null,
-                isAuthenticated: false
-            }),
+            logout: () => {
+                localStorage.removeItem('token')
+                set({
+                    user: null,
+                    token: null,
+                    isAuthenticated: false
+                })
+            },
         }),
         {
             name: 'auth-storage',
