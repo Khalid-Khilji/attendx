@@ -75,12 +75,9 @@ async def delete_semester(current_user, sem_id: str):
 
     return {"message": "Semester deleted successfully"}
 
-async def get_all_semesters(dept_id: str = None):
-
-    query = {}
-    if dept_id:
-        query["dept_id"] = dept_id
-
+async def get_all_semesters(dept_id: str):
+    query = {"dept_id": dept_id}
+    
     semesters = await db.semesters.find(query).to_list(None)
-
+    
     return [semester_entity(sem) for sem in semesters]

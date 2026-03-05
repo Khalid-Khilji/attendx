@@ -10,5 +10,8 @@ import Login from "./auth/Login";
 import Logout from "./auth/Logout";
 import Register from "./auth/Register";
 import RoleGuard from "./guards/RoleGuard";
+import DepartmentModal from "./forms/DepartmentModal";
+import SemesterModal from "./forms/SemesterModal";
+import CourseModal from "./forms/CourseModal";
 
-export { Header, Footer, ScrollToTop, Button, Input, Modal, Card, Loader, Login, Logout, Register, RoleGuard };
+export { Header, Footer, ScrollToTop, Button, Input, Modal, Card, Loader, Login, Logout, Register, RoleGuard, DepartmentModal, SemesterModal, CourseModal };

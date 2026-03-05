@@ -84,14 +84,11 @@ async def delete_course(course_id: str, current_user):
 
     return {"message": "Course deleted successfully"}
 
-async def get_all_courses(sem_id: str = None):
-
-    query = {}
-    if sem_id:
-        query["sem_id"] = sem_id
-
+async def get_all_courses(sem_id: str):
+    query = {"sem_id": sem_id}
+    
     courses = await db.courses.find(query).to_list(None)
-
+    
     return [course_entity(course) for course in courses]
 
 async def get_my_courses(current_user):

@@ -5,6 +5,7 @@ from routes.log_route import router as log_router
 from routes.department_route import router as department_router
 from routes.semester_route import router as semester_router
 from routes.teacher_route import router as teacher_router
+from routes.course_route import router as course_router
 
 app = FastAPI()
 
@@ -23,4 +24,5 @@ app.include_router(user_router)
 app.include_router(log_router)
 app.include_router(department_router)
 app.include_router(semester_router)
+app.include_router(course_router)
 app.include_router(teacher_router)

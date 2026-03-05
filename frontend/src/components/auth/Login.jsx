@@ -5,6 +5,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react'
 import { Modal, Input, Button, Loader } from '../index'
 import { login as loginApi } from '../../api/auth'
 import useAuthStore from '../../stores/auth'
+import { useNavigate } from 'react-router-dom'
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -25,6 +26,7 @@ const itemVariants = {
 
 const Login = ({ isOpen, onClose }) => {
   const { login } = useAuthStore()
+  const navigate = useNavigate();
 
   const mutation = useMutation({
     mutationFn: loginApi,
@@ -33,6 +35,13 @@ const Login = ({ isOpen, onClose }) => {
       if (access_token && user) {
         login(user, access_token)
         onClose()
+      }
+      if (user?.role === "admin") {
+        navigate('/admin/dashboard');
+      } else if (user?.role === "teacher") {
+        navigate('/teacher/dashboard');
+      } else if (user?.role === "student") {
+        navigate('/student/dashboard');
       }
     },
     onError: (error) => {
@@ -168,7 +177,7 @@ const Login = ({ isOpen, onClose }) => {
                         type="submit"
                         disabled={!canSubmit}
                         variant="primary"
-                        className="mt-2 font-bold rounded-xl shadow-lg shadow-violet-500/20 py-3"
+                        className="mt-2 font-bold rounded-xl shadow-lg shadow-violet-500/20 py-3 w-full"
                         icon={ArrowRight}
                         iconPosition="right"
                       >

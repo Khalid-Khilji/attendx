@@ -1,6 +1,6 @@
 from db.database import db
 from datetime import datetime
-from models.log_model import log_create_model, log_entity
+
 
 async def get_all_logs(
     role: str = None,
@@ -48,7 +48,8 @@ async def get_all_logs(
         pipeline.append({
             "$match": {
                 "$or": [
-                    {"action": {"$regex": search, "$options": "i"}},
+                    {"message": {"$regex": search, "$options": "i"}},
+                    {"action_type": {"$regex": search, "$options": "i"}},
                     {"teacher.first_name": {"$regex": search, "$options": "i"}},
                     {"teacher.last_name": {"$regex": search, "$options": "i"}},
                     {"teacher.faculty_id": {"$regex": search, "$options": "i"}}
@@ -62,10 +63,15 @@ async def get_all_logs(
         {"$limit": limit},
         {
             "$project": {
+                "_id": 0,
                 "log_id": 1,
                 "user_id": 1,
                 "role": 1,
-                "action": 1,
+                "action_type": 1,
+                "module": 1,
+                "resource_id": 1,
+                "message": 1,
+                "metadata": 1,
                 "timestamp": 1,
                 "teacher_name": {
                     "$cond": [
@@ -89,6 +95,7 @@ async def get_all_logs(
 
     return logs
 
+
 async def get_my_logs(
     current_user,
     start_date: str = None,
@@ -111,7 +118,21 @@ async def get_my_logs(
         {"$match": match_stage},
         {"$sort": {"timestamp": -1}},
         {"$skip": (page - 1) * limit},
-        {"$limit": limit}
+        {"$limit": limit},
+        {
+            "$project": {
+                "_id": 0,
+                "log_id": 1,
+                "user_id": 1,
+                "role": 1,
+                "action_type": 1,
+                "module": 1,
+                "resource_id": 1,
+                "message": 1,
+                "metadata": 1,
+                "timestamp": 1
+            }
+        }
     ]
 
     logs = await db.logs.aggregate(pipeline).to_list(None)

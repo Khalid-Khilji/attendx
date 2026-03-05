@@ -33,9 +33,10 @@ async def remove_course(
 ):
     return await delete_course(current_user, course_id)
 
-@router.get("/all")
+@router.get("/{dept_id}/{sem_id}")
 async def list_courses(
-    sem_id: str = None,
+    dept_id: str,
+    sem_id: str,
     current_user=Depends(role_required(["admin"]))
 ):
     return await get_all_courses(sem_id)

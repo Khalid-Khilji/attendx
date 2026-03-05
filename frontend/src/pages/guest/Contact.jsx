@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Mail, Phone, MapPin, Send, CheckCircle, Sparkles } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, CheckCircle, Sparkles, User } from 'lucide-react'
+import { Button, Input, Loader } from '../../components/index'
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -8,10 +9,16 @@ const Contact = () => {
     email: '',
     message: ''
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSubmitting(true)
+
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    setIsSubmitting(false)
     setSubmitted(true)
     setTimeout(() => {
       setSubmitted(false)
@@ -82,65 +89,93 @@ const Contact = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-3 bg-white dark:bg-zinc-900/40 rounded-4xl p-6 md:p-10 border border-zinc-200 dark:border-zinc-800 shadow-xl"
+            className="lg:col-span-3 bg-white dark:bg-zinc-900/40 rounded-4xl p-6 md:p-10 border border-zinc-200 dark:border-zinc-800 shadow-xl relative overflow-hidden"
           >
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid md:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-5 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-violet-600 outline-none transition-all font-bold text-sm"
-                    placeholder="Your Name"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-5 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-violet-600 outline-none transition-all font-bold text-sm"
-                    placeholder="email@example.com"
-                    required
-                  />
-                </div>
-              </div>
+            <AnimatePresence mode="wait">
+              {isSubmitting ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-20"
+                >
+                  <Loader text="Transmitting message..." size="lg" />
+                </motion.div>
+              ) : submitted ? (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-20 flex flex-col items-center justify-center text-center"
+                >
+                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle size={40} />
+                  </div>
+                  <h2 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tight">Message Received</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400 mt-2">We'll get back to you shortly at {formData.email}</p>
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onSubmit={handleSubmit}
+                  className="space-y-5"
+                >
+                  <div className="grid md:grid-cols-2 gap-5">
+                    <Input
+                      label="Full Name"
+                      name="name"
+                      value={formData.name}
+                      onChange={(val) => setFormData({ ...formData, name: val })}
+                      placeholder="Enter your name"
+                      icon={User}
+                      autoComplete="name"
+                      required
+                    />
+                    <Input
+                      label="Email Address"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(val) => setFormData({ ...formData, email: val })}
+                      placeholder="name@institution.com"
+                      icon={Mail}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">Message</label>
-                <textarea
-                  rows="4"
-                  value={formData.message}
-                  onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  className="w-full px-5 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:border-violet-600 outline-none transition-all font-bold text-sm resize-none"
-                  placeholder="How can we help?"
-                  required
-                />
-              </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor='message' className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1">Message Body</label>
+                    <textarea
+                      id='message'
+                      name='message'
+                      autoComplete='off'
+                      rows="5"
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      className="w-full px-5 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-gray-900 text-zinc-900 dark:text-white focus:border-violet-600 dark:focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 outline-none transition-all font-medium text-sm resize-none"
+                      placeholder="How can we help your institution?"
+                      required
+                    />
+                  </div>
 
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="w-full bg-violet-600 text-white py-4 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2 hover:bg-violet-700 transition-all disabled:opacity-50"
-                disabled={submitted}
-              >
-                <AnimatePresence mode="wait">
-                  {submitted ? (
-                    <motion.div key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
-                      <CheckCircle size={16} /> Sent
-                    </motion.div>
-                  ) : (
-                    <motion.div key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
-                      Send Message <Send size={16} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </form>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    icon={Send}
+                    iconPosition="right"
+                    className="font-bold uppercase tracking-widest text-xs py-4"
+                  >
+                    Send Message
+                  </Button>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </section>

@@ -32,9 +32,9 @@ async def remove_semester(
 ):
     return await delete_semester(current_user, sem_id)
 
-@router.get("/all")
+@router.get("/{dept_id}")
 async def list_semesters(
-    dept_id: str = None,
+    dept_id: str, 
     current_user=Depends(role_required(["admin"]))
 ):
     return await get_all_semesters(dept_id)
