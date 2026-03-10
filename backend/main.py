@@ -1,11 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.users_route import router as user_router
-from routes.log_route import router as log_router
-from routes.department_route import router as department_router
-from routes.semester_route import router as semester_router
-from routes.teacher_route import router as teacher_router
-from routes.course_route import router as course_router
+from routes import (
+    users_route,
+    department_route,
+    academic_year_route,
+    semester_route,
+    course_route,
+    course_teacher_route,
+    teacher_detail_route,
+    student_detail_route,
+    student_enrollment_route,
+    timetable_route,
+    attendance_session_route,
+    attendance_record_route,
+    activity_log_route
+)
 
 app = FastAPI()
 
@@ -20,9 +29,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user_router)
-app.include_router(log_router)
-app.include_router(department_router)
-app.include_router(semester_router)
-app.include_router(course_router)
-app.include_router(teacher_router)
+app.include_router(users_route.router)
+app.include_router(department_route.router)
+app.include_router(academic_year_route.router)
+app.include_router(semester_route.router)
+app.include_router(course_route.router)
+app.include_router(course_teacher_route.router)
+app.include_router(teacher_detail_route.router)
+app.include_router(student_detail_route.router)
+app.include_router(student_enrollment_route.router)
+app.include_router(timetable_route.router)
+app.include_router(attendance_session_route.router)
+app.include_router(attendance_record_route.router)
+app.include_router(activity_log_route.router)

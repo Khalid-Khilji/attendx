@@ -1,19 +1,21 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List
-
-class CourseTeacher(BaseModel):
-    teacher_id: str
-    is_primary: bool
 
 class CourseCreate(BaseModel):
     name: str
+    course_code: str
     sem_id: str
-    teachers: List[CourseTeacher]
+
+class CourseUpdate(BaseModel):
+    name: str | None = None
+    course_code: str | None = None
 
 class CourseResponse(BaseModel):
-    _id: str
+    id: str
     name: str
+    course_code: str
     sem_id: str
-    teachers: List[CourseTeacher]
     created_at: datetime
+
+    class Config:
+        populate_by_name = True

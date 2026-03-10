@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Activity, Search, Calendar, UserCheck, ShieldCheck, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Loader } from '../../components/index';
-import { getAllLogs } from '../../api/logs';
+import { getAllLogs } from '../../api/index';
 
 const AdminLog = () => {
   const [filters, setFilters] = useState({

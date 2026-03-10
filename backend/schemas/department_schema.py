@@ -5,8 +5,15 @@ class DepartmentCreate(BaseModel):
     name: str
     short_name: str
 
+class DepartmentUpdate(BaseModel):
+    name: str | None = None
+    short_name: str | None = None
+
 class DepartmentResponse(BaseModel):
-    _id: str
+    id: str
     name: str
     short_name: str
     created_at: datetime
+
+    class Config:
+        populate_by_name = True

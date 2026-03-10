@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from schemas.course_schema import CourseCreate
+from schemas.course_schema import CourseCreate, CourseUpdate
 from controllers.course_controller import (
     create_course,
     update_course,
@@ -16,15 +16,15 @@ async def add_course(
     course: CourseCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await create_course(current_user, course.dict())
+    return await create_course(current_user, course.model_dump())
 
-@router.put("/update/{course_id}")
+@router.patch("/update/{course_id}")
 async def edit_course(
     course_id: str,
-    course: CourseCreate,
+    course: CourseUpdate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await update_course(current_user, course_id, course.dict())
+    return await update_course(current_user, course_id, course.model_dump(exclude_none=True))
 
 @router.delete("/delete/{course_id}")
 async def remove_course(
@@ -33,16 +33,15 @@ async def remove_course(
 ):
     return await delete_course(current_user, course_id)
 
-@router.get("/{dept_id}/{sem_id}")
-async def list_courses(
-    dept_id: str,
-    sem_id: str,
-    current_user=Depends(role_required(["admin"]))
-):
-    return await get_all_courses(sem_id)
-
 @router.get("/my")
 async def my_courses(
     current_user=Depends(role_required(["teacher"]))
 ):
     return await get_my_courses(current_user)
+
+@router.get("/{sem_id}")
+async def list_courses(
+    sem_id: str,
+    current_user=Depends(role_required(["admin", "teacher"]))
+):
+    return await get_all_courses(sem_id)

@@ -1,27 +1,16 @@
 from db.database import db
-from datetime import datetime
-import uuid
+from models.activity_log_model import log_create_model
 
-async def log_action(
-    current_user: dict,
-    action_type: str,
-    module: str,
-    message: str = "",
-    resource_id: str = None,
-    metadata: dict = None
-):
-    log_data = {
-        "log_id": str(uuid.uuid4()),
-        "user_id": current_user["user_id"],
-        "role": current_user["role"],
-        "action_type": action_type,
-        "module": module,
-        "resource_id": resource_id,
-        "message": message,
-        "metadata": metadata or {},
-        "timestamp": datetime.utcnow()
-    }
-
-    await db.logs.insert_one(log_data)
-
-    return log_data
+async def log_action(current_user, action: str, entity: str, entity_id: str, meta: dict = None):
+    try:
+        log_data = log_create_model(
+            actor_id=current_user["user_id"],
+            actor_role=current_user["role"],
+            action=action,
+            entity=entity,
+            entity_id=str(entity_id),
+            meta=meta
+        )
+        await db.activity_logs.insert_one(log_data)
+    except Exception as e:
+        print(f"Log error: {e}")

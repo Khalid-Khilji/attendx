@@ -1,14 +1,33 @@
 import Home from "./guest/Home";
 import About from "./guest/About";
 import Contact from "./guest/Contact";
+
 import AdminDashboard from "./admin/AdminDashboard";
 import Academic from "./admin/Academic";
 import Teacher from "./admin/Teacher";
 import Student from "./admin/Student";
+import AdminTimetable from "./admin/Timetable";
+import AdminAttendance from "./admin/Attendance";
 import AdminLog from "./admin/AdminLog";
-import StudentDashboard from "./student/StudentDashboard";
+
 import TeacherDashboard from "./teacher/TeacherDashboard";
+import TeacherAttendance from "./teacher/Attendance";
+import TeacherCourses from "./teacher/Courses";
+import TeacherProfile from "./teacher/Profile";
+import TeacherTimetable from "./teacher/Timetable";
+
+import StudentDashboard from "./student/StudentDashboard";
+import StudentProfile from "./student/Profile";
+import StudentAttendance from "./student/Attendance";
+import StudentTimetable from "./student/Timetable";
+
 import Unauthorized from "./errors/Unauthorized";
 import NotFound from "./errors/NotFound";
 
-export { Home, AdminDashboard, StudentDashboard, TeacherDashboard, Unauthorized, NotFound, About, Contact, Academic, Teacher, Student, AdminLog };
+export {
+    Home, About, Contact,
+    AdminDashboard, Academic, Teacher, Student, AdminLog,
+    TeacherDashboard, TeacherAttendance, TeacherCourses, TeacherProfile, TeacherTimetable,
+    StudentDashboard, StudentProfile, StudentAttendance, StudentTimetable,
+    Unauthorized, NotFound
+};

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from schemas.semester_schema import SemesterCreate
+from schemas.semester_schema import SemesterCreate, SemesterUpdate
 from controllers.semester_controller import (
     create_semester,
     update_semester,
@@ -15,15 +15,15 @@ async def add_semester(
     sem: SemesterCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await create_semester(current_user, sem.dict())
+    return await create_semester(current_user, sem.model_dump())
 
-@router.put("/update/{sem_id}")
+@router.patch("/update/{sem_id}")
 async def edit_semester(
     sem_id: str,
-    sem: SemesterCreate,
+    sem: SemesterUpdate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await update_semester(current_user, sem_id, sem.dict())
+    return await update_semester(current_user, sem_id, sem.model_dump(exclude_none=True))
 
 @router.delete("/delete/{sem_id}")
 async def remove_semester(
@@ -34,7 +34,7 @@ async def remove_semester(
 
 @router.get("/{dept_id}")
 async def list_semesters(
-    dept_id: str, 
-    current_user=Depends(role_required(["admin"]))
+    dept_id: str,
+    current_user=Depends(role_required(["admin", "teacher"]))
 ):
     return await get_all_semesters(dept_id)

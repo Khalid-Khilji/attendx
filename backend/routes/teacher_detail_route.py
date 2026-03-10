@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
-from schemas.teacher_schema import TeacherCreate
-from controllers.teacher_controller import (
+from schemas.teacher_detail_schema import TeacherCreate, TeacherUpdate
+from controllers.teacher_detail_controller import (
     create_teacher,
+    update_teacher,
     delete_teacher,
     get_all_teachers,
     get_my_profile
@@ -15,7 +16,15 @@ async def add_teacher(
     teacher: TeacherCreate,
     current_user=Depends(role_required(["admin"]))
 ):
-    return await create_teacher(current_user, teacher.dict())
+    return await create_teacher(current_user, teacher.model_dump())
+
+@router.patch("/update/{teacher_id}")
+async def edit_teacher(
+    teacher_id: str,
+    teacher: TeacherUpdate,
+    current_user=Depends(role_required(["admin"]))
+):
+    return await update_teacher(current_user, teacher_id, teacher.model_dump(exclude_none=True))
 
 @router.delete("/delete/{teacher_id}")
 async def remove_teacher(

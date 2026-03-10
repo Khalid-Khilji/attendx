@@ -4,8 +4,7 @@ from utils.jwt import create_access_token
 from models.user_model import user_create_model, user_entity
 
 async def create_user(data):
-
-    existing = await db.users.find_one({"email": data["email"]})
+    existing = await db.users.find_one({"email": data["email"].lower().strip()})
     if existing:
         return {"error": "Email already exists"}
 
@@ -16,12 +15,10 @@ async def create_user(data):
     )
 
     await db.users.insert_one(user_data)
-
     return user_entity(user_data)
 
 async def login_user(data):
-
-    user = await db.users.find_one({"email": data["email"]})
+    user = await db.users.find_one({"email": data["email"].lower().strip()})
     if not user:
         return {"error": "Invalid credentials"}
 
@@ -32,36 +29,24 @@ async def login_user(data):
         return {"error": "Invalid credentials"}
 
     token = create_access_token({
-        "user_id": user["user_id"],
+        "user_id": str(user["_id"]),
         "role": user["role"]
     })
 
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": {
-            "user_id": user["user_id"],
-            "email": user["email"],
-            "role": user["role"],
-            "created_at": user["created_at"]
-        }
+        "user": user_entity(user)
     }
 
 async def delete_user(current_user, user_id: str):
-
-    user = await db.users.find_one({"user_id": user_id})
+    user = await db.users.find_one({"_id": user_id})
     if not user:
         return {"error": "User not found"}
 
     await db.users.update_one(
-        {"user_id": user_id},
+        {"_id": user_id},
         {"$set": {"is_active": False}}
     )
-
-    if user["role"] == "teacher":
-        await db.teacher_details.delete_one({"user_id": user_id})
-
-    if user["role"] == "student":
-        await db.student_details.delete_one({"user_id": user_id})
 
     return {"message": "User disabled successfully"}

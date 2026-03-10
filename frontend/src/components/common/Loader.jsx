@@ -5,7 +5,9 @@ const Loader = ({
   size = 'md', 
   fullPage = false, 
   text = 'Loading...', 
-  variant = 'primary' 
+  variant = 'primary',
+  type = 'rect',
+  className = "" 
 }) => {
   
   const sizes = {
@@ -21,8 +23,31 @@ const Loader = ({
     white: "text-white"
   }
 
+  if (variant === 'skeleton') {
+    const skeletonStyles = {
+      circle: "rounded-full",
+      rect: "rounded-2xl",
+      text: "rounded-lg h-4 w-full"
+    }
+
+    return (
+      <div className={`relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 ${skeletonStyles[type]} ${className}`}>
+        <motion.div
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{
+            repeat: Infinity,
+            duration: 1.5,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 dark:via-zinc-700/30 to-transparent"
+        />
+      </div>
+    )
+  }
+
   const content = (
-    <div className="flex flex-col items-center justify-center gap-3">
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       <div className="relative">
         <motion.div
           animate={{ rotate: 360 }}
@@ -45,7 +70,7 @@ const Loader = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
+          className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500"
         >
           {text}
         </motion.p>
