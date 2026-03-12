@@ -1,6 +1,5 @@
 from db.database import db
 from models.teacher_detail_model import teacher_create_model, teacher_entity
-from models.user_model import user_create_model
 from utils.hash import hash_password
 from utils.logger import log_action
 import uuid
@@ -42,7 +41,13 @@ async def create_teacher(current_user, data):
     teacher_data = teacher_create_model(user_id, first_name, last_name, faculty_id, data["dept_id"])
     await db.teacher_details.insert_one(teacher_data)
 
-    await log_action(current_user, "CREATE", "teacher", user_id)
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "TEACHER", 
+        user_id, 
+        f"{first_name} {last_name} ({faculty_id})"
+    )
 
     return {
         "teacher": teacher_entity(teacher_data),
@@ -57,7 +62,15 @@ async def update_teacher(current_user, teacher_id: str, data):
 
     update = {k: v.lower().strip() if isinstance(v, str) else v for k, v in data.items()}
     await db.teacher_details.update_one({"_id": teacher_id}, {"$set": update})
-    await log_action(current_user, "UPDATE", "teacher", teacher_id, {"before": teacher_entity(teacher), "after": update})
+    
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "TEACHER", 
+        teacher_id, 
+        f"{teacher['first_name']} {teacher['last_name']} ({teacher['faculty_id']})", 
+        {"changes": update}
+    )
 
     updated = await db.teacher_details.find_one({"_id": teacher_id})
     return teacher_entity(updated)
@@ -68,7 +81,15 @@ async def delete_teacher(current_user, teacher_id: str):
         return {"error": "Teacher not found"}
 
     await db.users.update_one({"_id": teacher_id}, {"$set": {"is_active": False}})
-    await log_action(current_user, "DELETE", "teacher", teacher_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "TEACHER", 
+        teacher_id, 
+        f"{teacher['first_name']} {teacher['last_name']} ({teacher['faculty_id']})"
+    )
+    
     return {"message": "Teacher disabled"}
 
 async def get_all_teachers():

@@ -8,6 +8,7 @@ class LogCreate(BaseModel):
     action: Literal["CREATE", "UPDATE", "DELETE", "PROMOTE"]
     entity: str
     entity_id: str
+    entity_name: str
     meta: Optional[Dict[str, Any]] = None
 
 class LogResponse(BaseModel):
@@ -17,6 +18,7 @@ class LogResponse(BaseModel):
     action: str
     entity: str
     entity_id: str
+    entity_name: str
     meta: Optional[Dict[str, Any]]
     timestamp: datetime
 

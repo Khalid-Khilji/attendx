@@ -31,21 +31,21 @@ const Login = ({ isOpen, onClose }) => {
   const mutation = useMutation({
     mutationFn: loginApi,
     onSuccess: (response) => {
-      const { access_token, user } = response.data
+      const { access_token, user } = response
       if (access_token && user) {
         login(user, access_token)
         onClose()
-      }
-      if (user?.role === "admin") {
-        navigate('/admin/dashboard');
-      } else if (user?.role === "teacher") {
-        navigate('/teacher/dashboard');
-      } else if (user?.role === "student") {
-        navigate('/student/dashboard');
+        if (user?.role === "admin") {
+          navigate('/admin/dashboard');
+        } else if (user?.role === "teacher") {
+          navigate('/teacher/dashboard');
+        } else if (user?.role === "student") {
+          navigate('/student/dashboard');
+        }
       }
     },
     onError: (error) => {
-      console.error(error?.response?.data?.message || error.message)
+      console.error(error?.message || error)
     }
   })
 
@@ -118,6 +118,7 @@ const Login = ({ isOpen, onClose }) => {
                         onBlur={field.handleBlur}
                         onChange={(val) => field.handleChange(val)}
                         error={field.state.meta.touchedErrors?.[0]}
+                        autoComplete="email"
                         placeholder="name@company.com"
                         icon={Mail}
                       />
@@ -143,6 +144,7 @@ const Login = ({ isOpen, onClose }) => {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(val) => field.handleChange(val)}
+                        autoComplete="off"
                         error={field.state.meta.touchedErrors?.[0]}
                         placeholder="••••••••"
                         icon={Lock}

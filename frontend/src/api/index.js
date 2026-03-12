@@ -6,7 +6,7 @@ export * from './courseTeachers';
 export * from './academicYear';
 export * from './teachers';
 export * from './students';
-export * from './studentEnrollments';
+export * from './studentEnrollment';
 export * from './timetable';
 export * from './attendance';
 export * from './logs';

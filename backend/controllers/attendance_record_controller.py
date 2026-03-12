@@ -7,6 +7,9 @@ async def mark_attendance(current_user, data):
     if not session:
         return {"error": "Session not found"}
 
+    course = await db.courses.find_one({"_id": session["course_id"]})
+    course_name = course["name"] if course else "Unknown Course"
+
     results = []
     for record in data["records"]:
         existing = await db.attendance_records.find_one({
@@ -25,7 +28,14 @@ async def mark_attendance(current_user, data):
         await db.attendance_records.insert_one(record_data)
         results.append({"student_id": record["student_id"], "status": record["status"]})
 
-    await log_action(current_user, "CREATE", "attendance_record", data["session_id"])
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "ATTENDANCE_BATCH", 
+        data["session_id"], 
+        f"{course_name} ({session['date']})",
+        {"record_count": len(data["records"])}
+    )
     return {"session_id": data["session_id"], "results": results}
 
 async def get_session_records(session_id: str):
@@ -112,9 +122,22 @@ async def update_record_status(current_user, record_id: str, data):
     record = await db.attendance_records.find_one({"_id": record_id})
     if not record:
         return {"error": "Record not found"}
+    
+    student = await db.student_details.find_one({"_id": record["student_id"]})
+    student_name = f"{student['first_name']} {student['last_name']}" if student else "Unknown Student"
 
     await db.attendance_records.update_one(
         {"_id": record_id},
         {"$set": {"status": data["status"], "reviewed": True}}
     )
+
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "ATTENDANCE_RECORD", 
+        record_id, 
+        student_name,
+        {"old_status": record["status"], "new_status": data["status"]}
+    )
+
     return {"message": "Updated", "status": data["status"]}

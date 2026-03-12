@@ -1,6 +1,12 @@
+from datetime import datetime, date
 from db.database import db
 from models.academic_year_model import academic_year_create_model, academic_year_entity
 from utils.logger import log_action
+
+def to_datetime(d):
+    if isinstance(d, date) and not isinstance(d, datetime):
+        return datetime.combine(d, datetime.min.time())
+    return d
 
 async def create_academic_year(current_user, data):
     existing = await db.academic_years.find_one({"label": data["label"].strip()})
@@ -12,12 +18,12 @@ async def create_academic_year(current_user, data):
 
     ay_data = academic_year_create_model(
         data["label"],
-        data["start_date"],
-        data["end_date"],
+        to_datetime(data["start_date"]),
+        to_datetime(data["end_date"]),
         data.get("is_current", False)
     )
     await db.academic_years.insert_one(ay_data)
-    await log_action(current_user, "CREATE", "academic_year", ay_data["_id"])
+    await log_action(current_user, "CREATE", "academic_year", ay_data["_id"], ay_data["label"])
     return academic_year_entity(ay_data)
 
 async def update_academic_year(current_user, ay_id: str, data):
@@ -31,8 +37,13 @@ async def update_academic_year(current_user, ay_id: str, data):
             {"$set": {"is_current": False}}
         )
 
+    if "start_date" in data:
+        data["start_date"] = to_datetime(data["start_date"])
+    if "end_date" in data:
+        data["end_date"] = to_datetime(data["end_date"])
+
     await db.academic_years.update_one({"_id": ay_id}, {"$set": data})
-    await log_action(current_user, "UPDATE", "academic_year", ay_id, {"before": academic_year_entity(ay), "after": data})
+    await log_action(current_user, "UPDATE", "academic_year", ay_id, ay["label"], {"before": academic_year_entity(ay), "after": data})
 
     updated = await db.academic_years.find_one({"_id": ay_id})
     return academic_year_entity(updated)
@@ -43,7 +54,7 @@ async def delete_academic_year(current_user, ay_id: str):
         return {"error": "Academic year not found"}
 
     await db.academic_years.delete_one({"_id": ay_id})
-    await log_action(current_user, "DELETE", "academic_year", ay_id)
+    await log_action(current_user, "DELETE", "academic_year", ay_id, ay["label"])
     return {"message": "Academic year deleted"}
 
 async def get_all_academic_years():

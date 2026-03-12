@@ -4,17 +4,16 @@ from datetime import datetime
 
 class SemesterCreate(BaseModel):
     dept_id: str
-    academic_year_id: str
     sem_number: int
-    status: Literal["upcoming", "ongoing", "completed"] = "upcoming"
+    status: str = "upcoming"
 
 class SemesterUpdate(BaseModel):
+    sem_number: int | None = None
     status: Literal["upcoming", "ongoing", "completed"] | None = None
 
 class SemesterResponse(BaseModel):
     id: str
     dept_id: str
-    academic_year_id: str
     sem_number: int
     status: str
     created_at: datetime

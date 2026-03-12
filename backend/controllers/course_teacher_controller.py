@@ -30,13 +30,24 @@ async def assign_teacher(current_user, data):
         data.get("is_primary", False)
     )
     await db.course_teachers.insert_one(ct_data)
-    await log_action(current_user, "CREATE", "course_teacher", ct_data["_id"])
+    
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "COURSE_TEACHER", 
+        ct_data["_id"], 
+        f"{teacher['first_name']} {teacher['last_name']} -> {course['name'].upper()}"
+    )
+    
     return course_teacher_entity(ct_data)
 
 async def update_teacher_assignment(current_user, ct_id: str, data):
     ct = await db.course_teachers.find_one({"_id": ct_id})
     if not ct:
         return {"error": "Assignment not found"}
+
+    course = await db.courses.find_one({"_id": ct["course_id"]})
+    teacher = await db.teacher_details.find_one({"_id": ct["teacher_id"]})
 
     if data.get("is_primary"):
         await db.course_teachers.update_many(
@@ -45,6 +56,16 @@ async def update_teacher_assignment(current_user, ct_id: str, data):
         )
 
     await db.course_teachers.update_one({"_id": ct_id}, {"$set": data})
+    
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "COURSE_TEACHER", 
+        ct_id, 
+        f"{teacher['first_name']} {teacher['last_name']} in {course['name'].upper()}",
+        {"changes": data}
+    )
+
     updated = await db.course_teachers.find_one({"_id": ct_id})
     return course_teacher_entity(updated)
 
@@ -53,8 +74,19 @@ async def remove_teacher(current_user, ct_id: str):
     if not ct:
         return {"error": "Assignment not found"}
 
+    course = await db.courses.find_one({"_id": ct["course_id"]})
+    teacher = await db.teacher_details.find_one({"_id": ct["teacher_id"]})
+
     await db.course_teachers.delete_one({"_id": ct_id})
-    await log_action(current_user, "DELETE", "course_teacher", ct_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "COURSE_TEACHER", 
+        ct_id, 
+        f"{teacher['first_name']} {teacher['last_name']} from {course['name'].upper() if course else 'Unknown Course'}"
+    )
+    
     return {"message": "Teacher removed from course"}
 
 async def get_course_teachers(course_id: str):

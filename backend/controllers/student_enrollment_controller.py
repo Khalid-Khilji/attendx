@@ -25,10 +25,22 @@ async def enroll_student(current_user, data):
         data["academic_year_id"]
     )
     await db.student_enrollments.insert_one(enrollment_data)
-    await log_action(current_user, "CREATE", "enrollment", enrollment_data["_id"])
+    
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "ENROLLMENT", 
+        enrollment_data["_id"], 
+        f"{student['first_name']} {student['last_name']} ({student['roll_no']}) -> Sem {sem['sem_number']}"
+    )
+    
     return enrollment_entity(enrollment_data)
 
 async def promote_student(current_user, student_id: str, data):
+    student = await db.student_details.find_one({"_id": student_id})
+    if not student:
+        return {"error": "Student not found"}
+
     current_enrollment = await db.student_enrollments.find_one({
         "student_id": student_id,
         "status": "active"
@@ -50,10 +62,17 @@ async def promote_student(current_user, student_id: str, data):
     new_enrollment["dept_id"] = current_enrollment["dept_id"]
     await db.student_enrollments.insert_one(new_enrollment)
 
-    await log_action(current_user, "PROMOTE", "student", student_id, {
-        "from_sem": current_enrollment["sem_id"],
-        "to_sem": data["next_sem_id"]
-    })
+    await log_action(
+        current_user, 
+        "PROMOTE", 
+        "ENROLLMENT", 
+        student_id, 
+        f"{student['first_name']} {student['last_name']} to Sem {next_sem['sem_number']}",
+        {
+            "from_sem": current_enrollment["sem_id"],
+            "to_sem": data["next_sem_id"]
+        }
+    )
 
     return enrollment_entity(new_enrollment)
 

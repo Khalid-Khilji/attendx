@@ -7,13 +7,8 @@ async def create_semester(current_user, data):
     if not dept:
         return {"error": "Department not found"}
 
-    ay = await db.academic_years.find_one({"_id": data["academic_year_id"]})
-    if not ay:
-        return {"error": "Academic year not found"}
-
     existing = await db.semesters.find_one({
         "dept_id": data["dept_id"],
-        "academic_year_id": data["academic_year_id"],
         "sem_number": data["sem_number"]
     })
     if existing:
@@ -21,12 +16,18 @@ async def create_semester(current_user, data):
 
     sem_data = semester_create_model(
         data["dept_id"],
-        data["academic_year_id"],
         data["sem_number"],
         data.get("status", "upcoming")
     )
     await db.semesters.insert_one(sem_data)
-    await log_action(current_user, "CREATE", "semester", sem_data["_id"])
+    
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "SEMESTER", 
+        sem_data["_id"], 
+        f"{dept['short_name'].upper()} - SEM {data['sem_number']}"
+    )
     return semester_entity(sem_data)
 
 async def update_semester(current_user, sem_id: str, data):
@@ -34,8 +35,19 @@ async def update_semester(current_user, sem_id: str, data):
     if not sem:
         return {"error": "Semester not found"}
 
+    dept = await db.departments.find_one({"_id": sem["dept_id"]})
+    dept_name = dept["short_name"].upper() if dept else "UNKNOWN"
+
     await db.semesters.update_one({"_id": sem_id}, {"$set": data})
-    await log_action(current_user, "UPDATE", "semester", sem_id, {"before": semester_entity(sem), "after": data})
+    
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "SEMESTER", 
+        sem_id, 
+        f"{dept_name} - SEM {sem['sem_number']}", 
+        {"before": semester_entity(sem), "after": data}
+    )
 
     updated = await db.semesters.find_one({"_id": sem_id})
     return semester_entity(updated)
@@ -45,8 +57,18 @@ async def delete_semester(current_user, sem_id: str):
     if not sem:
         return {"error": "Semester not found"}
 
+    dept = await db.departments.find_one({"_id": sem["dept_id"]})
+    dept_name = dept["short_name"].upper() if dept else "UNKNOWN"
+
     await db.semesters.delete_one({"_id": sem_id})
-    await log_action(current_user, "DELETE", "semester", sem_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "SEMESTER", 
+        sem_id, 
+        f"{dept_name} - SEM {sem['sem_number']}"
+    )
     return {"message": "Semester deleted"}
 
 async def get_all_semesters(dept_id: str):

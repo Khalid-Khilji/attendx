@@ -27,8 +27,8 @@ const DepartmentModal = ({ isOpen, onClose, editData = null }) => {
                 {editData ? 'Update' : 'New'} Department
             </h2>
             <form onSubmit={(e) => { e.preventDefault(); mutation.mutate({ name: formData.name.toLowerCase(), short_name: formData.short_name.toLowerCase() }); }} className="space-y-4">
-                <Input label="Name" icon={Building2} value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} required />
-                <Input label="Short Name" icon={Hash} value={formData.short_name} onChange={(v) => setFormData({ ...formData, short_name: v })} required />
+                <Input label="Name" name="name" icon={Building2} autoComplete="off" value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} required />
+                <Input label="Short Name" name="shortName" icon={Hash} autoComplete="off" value={formData.short_name} onChange={(v) => setFormData({ ...formData, short_name: v })} required />
                 <div className="flex gap-3 pt-4">
                     <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
                     <Button type="submit" className="flex-1" isLoading={mutation.isPending}>{editData ? 'Save' : 'Create'}</Button>

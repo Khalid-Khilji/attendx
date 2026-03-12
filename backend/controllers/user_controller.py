@@ -2,6 +2,7 @@ from db.database import db
 from utils.hash import hash_password, verify_password
 from utils.jwt import create_access_token
 from models.user_model import user_create_model, user_entity
+from utils.logger import log_action
 
 async def create_user(data):
     existing = await db.users.find_one({"email": data["email"].lower().strip()})
@@ -15,6 +16,7 @@ async def create_user(data):
     )
 
     await db.users.insert_one(user_data)
+    
     return user_entity(user_data)
 
 async def login_user(data):
@@ -33,6 +35,16 @@ async def login_user(data):
         "role": user["role"]
     })
 
+    current_user_context = {"user_id": str(user["_id"]), "role": user["role"]}
+    await log_action(
+        current_user_context, 
+        "UPDATE", 
+        "AUTH", 
+        str(user["_id"]), 
+        user['email'],
+        {"action": "user_logged_in"}
+    )
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -47,6 +59,14 @@ async def delete_user(current_user, user_id: str):
     await db.users.update_one(
         {"_id": user_id},
         {"$set": {"is_active": False}}
+    )
+
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "USER_ACCOUNT", 
+        user_id, 
+        user['email']
     )
 
     return {"message": "User disabled successfully"}

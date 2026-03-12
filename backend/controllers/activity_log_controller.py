@@ -44,9 +44,15 @@ async def get_all_logs(
         {"$limit": limit},
         {
             "$project": {
-                "_id": 1, "actor_id": 1, "actor_role": 1,
-                "action": 1, "entity": 1, "entity_id": 1,
-                "meta": 1, "timestamp": 1,
+                "_id": 1, 
+                "actor_id": 1, 
+                "actor_role": 1,
+                "action": 1, 
+                "entity": 1, 
+                "entity_id": 1,
+                "entity_name": 1,
+                "meta": 1, 
+                "timestamp": 1,
                 "actor_name": {
                     "$cond": [
                         {"$eq": ["$actor_role", "teacher"]},

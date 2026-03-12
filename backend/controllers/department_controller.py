@@ -15,7 +15,13 @@ async def create_department(current_user, data):
     dept_data = department_create_model(name, short_name)
     await db.departments.insert_one(dept_data)
 
-    await log_action(current_user, "CREATE", "department", dept_data["_id"])
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "DEPARTMENT", 
+        dept_data["_id"], 
+        short_name.upper()
+    )
     return department_entity(dept_data)
 
 async def update_department(current_user, dept_id: str, data):
@@ -26,7 +32,14 @@ async def update_department(current_user, dept_id: str, data):
     update = {k: v.lower().strip() for k, v in data.items() if v}
     await db.departments.update_one({"_id": dept_id}, {"$set": update})
 
-    await log_action(current_user, "UPDATE", "department", dept_id, {"before": department_entity(dept), "after": update})
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "DEPARTMENT", 
+        dept_id, 
+        dept["short_name"].upper(), 
+        {"before": department_entity(dept), "after": update}
+    )
 
     updated = await db.departments.find_one({"_id": dept_id})
     return department_entity(updated)
@@ -37,7 +50,14 @@ async def delete_department(current_user, dept_id: str):
         return {"error": "Department not found"}
 
     await db.departments.delete_one({"_id": dept_id})
-    await log_action(current_user, "DELETE", "department", dept_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "DEPARTMENT", 
+        dept_id, 
+        dept["short_name"].upper()
+    )
     return {"message": "Department deleted"}
 
 async def get_all_departments():

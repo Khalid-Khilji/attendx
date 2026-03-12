@@ -16,9 +16,17 @@ async def create_course(current_user, data):
     if existing:
         return {"error": "Course already exists"}
 
-    course_data = course_create_model(data["name"], data["course_code"], data["sem_id"])
+    course_data = course_create_model(data["name"], data["course_code"], data["sem_id"], data.get("short_name", ""))
     await db.courses.insert_one(course_data)
-    await log_action(current_user, "CREATE", "course", course_data["_id"])
+    
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "COURSE", 
+        course_data["_id"], 
+        data["name"].upper()
+    )
+    
     return course_entity(course_data)
 
 async def update_course(current_user, course_id: str, data):
@@ -31,9 +39,19 @@ async def update_course(current_user, course_id: str, data):
         update["name"] = data["name"].lower().strip()
     if "course_code" in data:
         update["course_code"] = data["course_code"].upper().strip()
+    if "short_name" in data:
+        update["short_name"] = data["short_name"].upper().strip()
 
     await db.courses.update_one({"_id": course_id}, {"$set": update})
-    await log_action(current_user, "UPDATE", "course", course_id, {"before": course_entity(course), "after": update})
+    
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "COURSE", 
+        course_id, 
+        course["name"].upper(), 
+        {"before": course_entity(course), "after": update}
+    )
 
     updated = await db.courses.find_one({"_id": course_id})
     return course_entity(updated)
@@ -45,7 +63,15 @@ async def delete_course(current_user, course_id: str):
 
     await db.courses.delete_one({"_id": course_id})
     await db.course_teachers.delete_many({"course_id": course_id})
-    await log_action(current_user, "DELETE", "course", course_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "COURSE", 
+        course_id, 
+        course["name"].upper()
+    )
+    
     return {"message": "Course deleted"}
 
 async def get_all_courses(sem_id: str):
@@ -89,6 +115,7 @@ async def get_my_courses(current_user):
                 "_id": "$course._id",
                 "name": "$course.name",
                 "course_code": "$course.course_code",
+                "short_name": "$course.short_name",
                 "sem_id": "$course.sem_id",
                 "is_primary": 1,
                 "sem_number": "$semester.sem_number",

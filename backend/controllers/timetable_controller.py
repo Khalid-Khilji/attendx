@@ -8,6 +8,9 @@ async def create_slot(current_user, data):
     if not sem:
         return {"error": "Semester not found"}
 
+    course = await db.courses.find_one({"_id": data["course_id"]})
+    course_name = course["name"].upper() if course else "Unknown Course"
+
     conflict = await db.timetable.find_one({
         "teacher_id": data["teacher_id"],
         "day_of_week": data["day_of_week"],
@@ -24,7 +27,15 @@ async def create_slot(current_user, data):
         data["version_tag"], data["valid_from"]
     )
     await db.timetable.insert_one(slot_data)
-    await log_action(current_user, "CREATE", "timetable", slot_data["_id"])
+    
+    await log_action(
+        current_user, 
+        "CREATE", 
+        "TIMETABLE", 
+        slot_data["_id"], 
+        f"{course_name} | {data['day_of_week']} ({data['start_time']})"
+    )
+    
     return timetable_entity(slot_data)
 
 async def update_slot(current_user, slot_id: str, data):
@@ -32,8 +43,19 @@ async def update_slot(current_user, slot_id: str, data):
     if not slot:
         return {"error": "Slot not found"}
 
+    course = await db.courses.find_one({"_id": slot["course_id"]})
+    course_name = course["name"].upper() if course else "Unknown Course"
+
     await db.timetable.update_one({"_id": slot_id}, {"$set": data})
-    await log_action(current_user, "UPDATE", "timetable", slot_id)
+    
+    await log_action(
+        current_user, 
+        "UPDATE", 
+        "TIMETABLE", 
+        slot_id, 
+        f"{course_name} | {slot['day_of_week']}",
+        {"changes": data}
+    )
 
     updated = await db.timetable.find_one({"_id": slot_id})
     return timetable_entity(updated)
@@ -43,8 +65,19 @@ async def delete_slot(current_user, slot_id: str):
     if not slot:
         return {"error": "Slot not found"}
 
+    course = await db.courses.find_one({"_id": slot["course_id"]})
+    course_name = course["name"].upper() if course else "Unknown Course"
+
     await db.timetable.delete_one({"_id": slot_id})
-    await log_action(current_user, "DELETE", "timetable", slot_id)
+    
+    await log_action(
+        current_user, 
+        "DELETE", 
+        "TIMETABLE", 
+        slot_id, 
+        f"{course_name} | {slot['day_of_week']} ({slot['start_time']})"
+    )
+    
     return {"message": "Slot deleted"}
 
 async def get_sem_timetable(sem_id: str):
