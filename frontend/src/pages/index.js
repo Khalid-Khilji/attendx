@@ -6,8 +6,8 @@ import AdminDashboard from "./admin/AdminDashboard";
 import Academic from "./admin/Academic";
 import Teacher from "./admin/Teacher";
 import Student from "./admin/Student";
-import AdminTimetable from "./admin/Timetable";
-import AdminAttendance from "./admin/Attendance";
+import AdminTimetable from "./admin/AdminTimetable";
+import AdminAttendance from "./admin/AdminAttendance";
 import AdminLog from "./admin/AdminLog";
 
 import TeacherDashboard from "./teacher/TeacherDashboard";
@@ -26,7 +26,7 @@ import NotFound from "./errors/NotFound";
 
 export {
     Home, About, Contact,
-    AdminDashboard, Academic, Teacher, Student, AdminLog,
+    AdminDashboard, Academic, Teacher, Student, AdminLog, AdminAttendance, AdminTimetable,
     TeacherDashboard, TeacherAttendance, TeacherCourses, TeacherProfile, TeacherTimetable,
     StudentDashboard, StudentProfile, StudentAttendance, StudentTimetable,
     Unauthorized, NotFound

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { AlertCircle, Eye, EyeOff } from 'lucide-react'
+import Button from './Button'
 
 const Input = ({
   label,
+  id,
   name,
   type = 'text',
   value,
@@ -28,13 +30,13 @@ const Input = ({
 
       <div className="relative group">
         {Icon && (
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-violet-500 transition-colors">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-violet-500 transition-colors z-10">
             <Icon size={18} />
           </div>
         )}
 
         <input
-          id={name}
+          id={id || name}
           name={name}
           type={isPassword ? (showPassword ? 'text' : 'password') : type}
           value={value}
@@ -46,7 +48,7 @@ const Input = ({
             text-black dark:text-white bg-white dark:bg-gray-900
             placeholder:text-gray-400 dark:placeholder:text-gray-500
             ${Icon ? 'pl-11' : ''}
-            ${isPassword ? 'pr-11' : ''}
+            ${isPassword ? 'pr-12' : ''}
             ${error
               ? 'border-red-300 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 focus:border-red-500'
               : 'border-gray-200 dark:border-gray-800 focus:border-violet-600 dark:focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5'
@@ -56,13 +58,15 @@ const Input = ({
         />
 
         {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
+          <div className="absolute right-1 top-1/2 -translate-y-1/2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0! border-none bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              onClick={() => setShowPassword(!showPassword)}
+              icon={showPassword ? EyeOff : Eye}
+            />
+          </div>
         )}
       </div>
 

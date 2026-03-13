@@ -6,14 +6,22 @@ import Button from "./common/Button";
 import Input from "./common/Input";
 import Modal from "./common/Modal";
 import Loader from "./common/Loader";
+import Select from "./common/Select";
+import SelectOption from "./common/Select";
 
 import Login from "./auth/Login";
 import Logout from "./auth/Logout";
-import Register from "./auth/Register";
 
 import DepartmentModal from "./forms/DepartmentModal";
 import SemesterModal from "./forms/SemesterModal";
 import CourseModal from "./forms/CourseModal";
+import TimetableSlotModal from "./forms/TimeTableSlotModal";
+import StudentModal from "./forms/StudentModal";
+import EnrollModal from "./forms/EnrollModal";
+import FaceModal from "./forms/FaceModal";
+import TeacherModal from "./forms/TeacherModal";
+import AssignModal from "./forms/AssignModal";
+import AcademicYearModal from "./forms/AcademicYearModal";
 
 import RoleGuard from "./guards/RoleGuard";
 
@@ -21,9 +29,9 @@ import Card from "./shared/Card";
 
 export {
     Header, Footer, ScrollToTop,
-    Button, Input, Modal, Loader,
-    Login, Logout, Register,
-    DepartmentModal, SemesterModal, CourseModal,
+    Button, Input, Modal, Loader, Select, SelectOption,
+    Login, Logout,
+    DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal,
     RoleGuard,
     Card
 };

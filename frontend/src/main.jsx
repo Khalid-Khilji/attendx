@@ -1,18 +1,45 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.jsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom"
-import { Home, About, Contact, AdminDashboard, StudentDashboard, TeacherDashboard, Unauthorized, NotFound, Academic, Teacher, Student, AdminLog } from './pages/index.js'
-import RoleGuard from './components/guards/RoleGuard'
 import { ROLES } from './utils/constants'
+import { Loader } from './components'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
+
+const App = lazy(() => import('./App.jsx'))
+const RoleGuard = lazy(() => import('./components/guards/RoleGuard'))
+
+const Home = lazy(() => import('./pages/guest/Home'))
+const About = lazy(() => import('./pages/guest/About'))
+const Contact = lazy(() => import('./pages/guest/Contact'))
+
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const Academic = lazy(() => import('./pages/admin/Academic'))
+const Teacher = lazy(() => import('./pages/admin/Teacher'))
+const Student = lazy(() => import('./pages/admin/Student'))
+const AdminTimetable = lazy(() => import('./pages/admin/AdminTimetable'))
+const AdminAttendance = lazy(() => import('./pages/admin/AdminAttendance'))
+const AdminLog = lazy(() => import('./pages/admin/AdminLog'))
+
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'))
+
+const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'))
+
+const Unauthorized = lazy(() => import('./pages/errors/Unauthorized'))
+const NotFound = lazy(() => import('./pages/errors/NotFound'))
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path='/' element={<App />}>
+    <Route path='/' element={<Suspense fallback={<Loader fullPage />}><App /></Suspense>}>
       <Route index element={<Home />} />
       <Route path='about' element={<About />} />
       <Route path='contact' element={<Contact />} />
@@ -22,6 +49,8 @@ const router = createBrowserRouter(
         <Route path='academics' element={<Academic />} />
         <Route path='teachers' element={<Teacher />} />
         <Route path='students' element={<Student />} />
+        <Route path='timetable' element={<AdminTimetable />} />
+        <Route path='attendance' element={<AdminAttendance />} />
         <Route path='logs' element={<AdminLog />} />
       </Route>
 
@@ -44,5 +73,5 @@ createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 )

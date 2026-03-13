@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { X } from 'lucide-react'
+import Button from './Button'
 
 const Modal = ({
   isOpen,
@@ -44,18 +45,26 @@ const Modal = ({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800`}
+            className={`relative w-full ${sizes[size]} bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden`}
           >
             {showCloseButton && (
-              <button
-                onClick={onClose}
-                className="absolute right-4 top-4 p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
-              >
-                <X size={20} />
-              </button>
+              <div className="absolute right-4 top-4 z-10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 p-0! border-none bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl"
+                  onClick={onClose}
+                  icon={X}
+                />
+              </div>
             )}
 
-            <div className="px-6 py-5 max-h-[85vh] overflow-y-auto">
+            <div className="px-6 py-8 max-h-[85vh] overflow-y-auto hide-scrollbar">
+              {title && (
+                <h2 className="text-xl font-black uppercase tracking-tight mb-6 dark:text-white">
+                  {title}
+                </h2>
+              )}
               {children}
             </div>
           </motion.div>
