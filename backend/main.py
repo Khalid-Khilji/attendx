@@ -8,7 +8,7 @@ from routes import (
     teacher_detail_route, student_detail_route,
     student_enrollment_route, timetable_route,
     attendance_session_route, attendance_record_route,
-    activity_log_route
+    activity_log_route, dashboard_route
 )
 
 @asynccontextmanager
@@ -42,3 +42,4 @@ app.include_router(timetable_route.router)
 app.include_router(attendance_session_route.router)
 app.include_router(attendance_record_route.router)
 app.include_router(activity_log_route.router)
+app.include_router(dashboard_route.router)
