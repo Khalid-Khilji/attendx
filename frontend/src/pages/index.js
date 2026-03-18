@@ -11,10 +11,10 @@ import AdminAttendance from "./admin/AdminAttendance";
 import AdminLog from "./admin/AdminLog";
 
 import TeacherDashboard from "./teacher/TeacherDashboard";
-import TeacherAttendance from "./teacher/Attendance";
-import TeacherCourses from "./teacher/Courses";
-import TeacherProfile from "./teacher/Profile";
-import TeacherTimetable from "./teacher/Timetable";
+import TeacherAttendance from "./teacher/TeacherAttendance";
+import TeacherCourses from "./teacher/TeacherCourses";
+import TeacherProfile from "./teacher/TeacherProfile";
+import TeacherTimetable from "./teacher/TeacherTimetable";
 
 import StudentDashboard from "./student/StudentDashboard";
 import StudentProfile from "./student/Profile";

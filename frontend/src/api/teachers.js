@@ -36,7 +36,7 @@ const getAllTeachers = async () => {
     }
 };
 
-const getMyProfile = async () => {
+const getTeacherProfile = async () => {
     try {
         const response = await axiosInstance.get('/teachers/me');
         return response.data;
@@ -45,4 +45,4 @@ const getMyProfile = async () => {
     }
 };
 
-export { createTeacher, updateTeacher, deleteTeacher, getAllTeachers, getMyProfile };
+export { createTeacher, updateTeacher, deleteTeacher, getAllTeachers, getTeacherProfile };

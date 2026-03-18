@@ -70,3 +70,68 @@ async def get_admin_dashboard():
         "dept_stats": dept_stats,
         "recent_logs": logs
     }
+
+async def get_teacher_dashboard(current_user):
+    teacher_id = current_user["user_id"]
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_day = datetime.utcnow().strftime("%A")
+
+    total_courses, total_sessions, todays_sessions, recent_sessions = await asyncio.gather(
+        db.course_teachers.count_documents({"teacher_id": teacher_id}),
+        db.attendance_sessions.count_documents({"teacher_id": teacher_id}),
+        db.attendance_sessions.count_documents({"teacher_id": teacher_id, "date": {"$gte": today}}),
+        db.attendance_sessions.find({"teacher_id": teacher_id}).sort("date", -1).limit(5).to_list(None),
+    )
+
+    todays_slots_pipeline = [
+        {"$match": {"teacher_id": teacher_id, "day_of_week": today_day, "is_active": True}},
+        {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+        {"$unwind": "$course"},
+        {"$lookup": {"from": "semesters", "localField": "sem_id", "foreignField": "_id", "as": "semester"}},
+        {"$unwind": "$semester"},
+        {"$project": {
+            "_id": 1, "start_time": 1, "end_time": 1,
+            "course_name": "$course.name", "course_code": "$course.course_code",
+            "sem_number": "$semester.sem_number"
+        }},
+        {"$sort": {"start_time": 1}}
+    ]
+
+    total_students_pipeline = [
+        {"$match": {"teacher_id": teacher_id}},
+        {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+        {"$unwind": "$course"},
+        {"$lookup": {"from": "student_enrollments", "localField": "course.sem_id", "foreignField": "sem_id", "as": "enrollments"}},
+        {"$unwind": "$enrollments"},
+        {"$match": {"enrollments.status": "active"}},
+        {"$group": {"_id": "$enrollments.student_id"}},
+        {"$count": "total"}
+    ]
+
+    todays_slots, students_result = await asyncio.gather(
+        db.timetable.aggregate(todays_slots_pipeline).to_list(None),
+        db.course_teachers.aggregate(total_students_pipeline).to_list(None),
+    )
+
+    total_students = students_result[0]["total"] if students_result else 0
+
+    sessions_with_course = []
+    for s in recent_sessions:
+        course = await db.courses.find_one({"_id": s["course_id"]})
+        sessions_with_course.append({
+            "_id": str(s["_id"]),
+            "course_name": course["name"] if course else "",
+            "course_code": course["course_code"] if course else "",
+            "date": s["date"],
+        })
+
+    return {
+        "stats": {
+            "total_courses": total_courses,
+            "total_students": total_students,
+            "total_sessions": total_sessions,
+            "todays_sessions": todays_sessions,
+        },
+        "todays_slots": todays_slots,
+        "recent_sessions": sessions_with_course,
+    }

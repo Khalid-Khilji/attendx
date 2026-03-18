@@ -22,16 +22,25 @@ import FaceModal from "./forms/FaceModal";
 import TeacherModal from "./forms/TeacherModal";
 import AssignModal from "./forms/AssignModal";
 import AcademicYearModal from "./forms/AcademicYearModal";
+import RecordsModal from "./forms/RecordModal";
+import AttendanceModal from "./forms/AttendanceModal";
 
 import RoleGuard from "./guards/RoleGuard";
 
-import Card from "./shared/Card";
+import CourseCard from "./ui/CourseCard";
+import StudentRow from "./ui/StudentRow";
+import InfoRow from "./ui/InfoRow";
+import StatCard from "./ui/StatCard";
+import TimetableSlot from "./ui/TimetableSlot";
+import TimetableDayGroup from "./ui/TimeTableGroup";
+import SessionCard from "./ui/SessionCard";
+import AttendanceRecords from "./ui/AttendanceRecord";
 
 export {
     Header, Footer, ScrollToTop,
     Button, Input, Modal, Loader, Select, SelectOption,
     Login, Logout,
-    DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal,
+    DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal, RecordsModal, AttendanceModal,
     RoleGuard,
-    Card
+    CourseCard, StudentRow, InfoRow, StatCard, TimetableSlot, TimetableDayGroup, SessionCard, AttendanceRecords
 };

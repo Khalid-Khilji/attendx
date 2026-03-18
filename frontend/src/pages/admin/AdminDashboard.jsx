@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { Users, GraduationCap, BookOpen, Building2, Camera, CameraOff, Calendar, ClipboardList, Activity, History } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, Building2, Camera, CameraOff, Calendar, ClipboardList, Activity, History, LayoutDashboard } from 'lucide-react'
 import { getAdminDashboard } from '../../api/dashboard'
+import { StatCard } from '../../components/index'
 
 const actionColor = {
     CREATE: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
@@ -10,30 +11,18 @@ const actionColor = {
     PROMOTE: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
 }
 
-const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-        className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-5 shadow-sm">
-        <div className="flex items-start justify-between mb-4">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                <Icon size={18} />
-            </div>
-        </div>
-        <p className="text-2xl font-black text-zinc-800 dark:text-white">{value ?? '—'}</p>
-        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1">{label}</p>
-        {sub && <p className="text-[10px] text-zinc-400 mt-0.5">{sub}</p>}
-    </motion.div>
-)
-
 const SkeletonCard = () => (
-    <div className="animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-2xl h-32" />
+    <div className="animate-pulse h-32 rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
 )
 
 const AdminDashboard = () => {
     const { data, isLoading } = useQuery({
         queryKey: ['admin-dashboard'],
         queryFn: getAdminDashboard,
-        staleTime: 1000 * 60 * 5, // 5 mins cache
-        refetchOnWindowFocus: false
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
     })
 
     const counts = data?.counts
@@ -47,17 +36,23 @@ const AdminDashboard = () => {
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
             <div className="max-w-7xl mx-auto space-y-6">
 
-                <motion.div 
-                    initial={{ opacity: 0, x: -20 }} 
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 px-6 py-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter dark:text-white">
-                            Admin <span className="text-violet-600">Dashboard</span>
-                        </h1>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mt-0.5">
-                            {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
+                    className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 px-6 py-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-600/20">
+                            <LayoutDashboard size={24} />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black uppercase tracking-tighter dark:text-white">
+                                Admin <span className="text-violet-600">Dashboard</span>
+                            </h1>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mt-0.5">
+                                {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                        </div>
                     </div>
                     {currentYear && (
                         <div className="flex items-center gap-2 bg-violet-50 dark:bg-violet-900/20 px-4 py-2 rounded-xl">
@@ -74,9 +69,9 @@ const AdminDashboard = () => {
                         <StatCard icon={Building2} label="Departments" value={counts?.departments} color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" delay={0.15} />
                         <StatCard icon={BookOpen} label="Courses" value={counts?.courses} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600" delay={0.2} />
                         <StatCard icon={ClipboardList} label="Active Enrollments" value={counts?.active_enrollments} color="bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600" delay={0.25} />
-                        <StatCard icon={Camera} label="Face Registered" value={counts?.face_registered} sub={`${facePercent}% of students`} color="bg-teal-100 dark:bg-teal-900/30 text-teal-600" delay={0.3} />
-                        <StatCard icon={CameraOff} label="Face Pending" value={counts?.face_not_registered} color="bg-rose-100 dark:bg-rose-900/30 text-rose-500" delay={0.35} />
-                        <StatCard icon={Activity} label="Today's Sessions" value={counts?.todays_sessions} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600" delay={0.4} />
+                        <StatCard icon={Camera} label="Bio Sync" value={counts?.face_registered} sub={`${facePercent}% Secure`} color="bg-teal-100 dark:bg-teal-900/30 text-teal-600" delay={0.3} />
+                        <StatCard icon={CameraOff} label="Sync Pending" value={counts?.face_not_registered} color="bg-rose-100 dark:bg-rose-900/30 text-rose-500" delay={0.35} />
+                        <StatCard icon={Activity} label="Live Sessions" value={counts?.todays_sessions} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600" delay={0.4} />
                     </>}
                 </div>
 

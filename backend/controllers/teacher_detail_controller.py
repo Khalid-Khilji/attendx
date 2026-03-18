@@ -3,6 +3,7 @@ from models.teacher_detail_model import teacher_create_model, teacher_entity
 from utils.hash import hash_password
 from utils.logger import log_action
 import uuid
+import asyncio
 from datetime import datetime
 
 async def create_teacher(current_user, data):
@@ -130,7 +131,46 @@ async def get_all_teachers():
     return await db.teacher_details.aggregate(pipeline).to_list(None)
 
 async def get_my_profile(current_user):
-    teacher = await db.teacher_details.find_one({"_id": current_user["user_id"]})
+    teacher_id = current_user["user_id"]
+    
+    teacher = await db.teacher_details.find_one({"_id": teacher_id})
     if not teacher:
         return {"error": "Teacher not found"}
-    return teacher_entity(teacher)
+
+    user, dept, total_courses, total_sessions = await asyncio.gather(
+        db.users.find_one({"_id": teacher_id}),
+        db.departments.find_one({"_id": teacher["dept_id"]}),
+        db.course_teachers.count_documents({"teacher_id": teacher_id}),
+        db.attendance_sessions.count_documents({"teacher_id": teacher_id}),
+    )
+
+    total_students_pipeline = [
+        {"$match": {"teacher_id": teacher_id}},
+        {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+        {"$unwind": "$course"},
+        {"$lookup": {"from": "student_enrollments", "localField": "course.sem_id", "foreignField": "sem_id", "as": "enrollments"}},
+        {"$unwind": "$enrollments"},
+        {"$match": {"enrollments.status": "active"}},
+        {"$group": {"_id": "$enrollments.student_id"}},
+        {"$count": "total"}
+    ]
+    students_result = await db.course_teachers.aggregate(total_students_pipeline).to_list(None)
+    total_students = students_result[0]["total"] if students_result else 0
+
+    return {
+        "_id": str(teacher["_id"]),
+        "first_name": teacher["first_name"],
+        "last_name": teacher["last_name"],
+        "faculty_id": teacher["faculty_id"],
+        "dept_id": teacher["dept_id"],
+        "dept_name": dept["name"] if dept else "",
+        "dept_short": dept["short_name"] if dept else "",
+        "email": user["email"] if user else "",
+        "is_active": user.get("is_active", True) if user else True,
+        "created_at": teacher["created_at"],
+        "stats": {
+            "total_courses": total_courses,
+            "total_sessions": total_sessions,
+            "total_students": total_students,
+        }
+    }

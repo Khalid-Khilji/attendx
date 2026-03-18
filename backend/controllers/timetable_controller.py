@@ -138,10 +138,11 @@ async def get_my_timetable(current_user):
         {"$unwind": "$semester"},
         {
             "$project": {
-                "_id": 1, "day_of_week": 1, "start_time": 1, "end_time": 1,
-                "course_name": "$course.name",
-                "course_code": "$course.course_code",
-                "sem_number": "$semester.sem_number"
+            "_id": 1, "day_of_week": 1, "start_time": 1, "end_time": 1,
+            "course_id": 1, "sem_id": 1, "teacher_id": 1,
+            "course_name": "$course.name",
+            "course_code": "$course.course_code",
+            "sem_number": "$semester.sem_number"
             }
         },
         {"$sort": {"day_of_week": 1, "start_time": 1}}

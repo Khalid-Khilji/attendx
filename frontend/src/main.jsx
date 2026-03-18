@@ -11,6 +11,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
     },
   },
 })
@@ -30,9 +31,13 @@ const AdminTimetable = lazy(() => import('./pages/admin/AdminTimetable'))
 const AdminAttendance = lazy(() => import('./pages/admin/AdminAttendance'))
 const AdminLog = lazy(() => import('./pages/admin/AdminLog'))
 
-const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'))
-
 const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'))
+const TeacherTimetable = lazy(() => import('./pages/teacher/TeacherTimetable'))
+const TeacherAttendance = lazy(() => import('./pages/teacher/TeacherAttendance'))
+const TeacherProfile = lazy(() => import('./pages/teacher/TeacherProfile'))
+const TeacherCourses = lazy(() => import('./pages/teacher/TeacherCourses'))
+
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'))
 
 const Unauthorized = lazy(() => import('./pages/errors/Unauthorized'))
 const NotFound = lazy(() => import('./pages/errors/NotFound'))
@@ -56,6 +61,10 @@ const router = createBrowserRouter(
 
       <Route path='teacher' element={<RoleGuard allowedRoles={[ROLES.TEACHER]} />}>
         <Route path='dashboard' element={<TeacherDashboard />} />
+        <Route path='timetable' element={<TeacherTimetable />} />
+        <Route path='attendance' element={<TeacherAttendance />} />
+        <Route path='profile' element={<TeacherProfile />} />
+        <Route path='courses' element={<TeacherCourses />} />
       </Route>
 
       <Route path='student' element={<RoleGuard allowedRoles={[ROLES.STUDENT]} />}>
