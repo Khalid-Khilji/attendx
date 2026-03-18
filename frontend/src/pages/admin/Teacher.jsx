@@ -1,39 +1,42 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Edit3, Trash2, BookOpen, GraduationCap, Hash, Search, Filter, UserPlus, CheckCircle2 } from 'lucide-react';
+import { Edit3, Trash2, BookOpen, GraduationCap, Search, ChevronDown, Briefcase, UserPlus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllTeachers, deleteTeacher, getAllDepartments } from '../../api/index';
-import { Button, Input, Loader } from '../../components/index';
+import { getAllTeachers, deleteTeacher } from '../../api/index';
+import { Button, Input, Modal } from '../../components/index';
+import useAdminStore from '../../stores/admin';
 
 const TeacherModal = lazy(() => import('../../components/index').then(m => ({ default: m.TeacherModal })));
 const AssignModal = lazy(() => import('../../components/index').then(m => ({ default: m.AssignModal })));
 
 const Teachers = () => {
   const queryClient = useQueryClient();
+  const { departments } = useAdminStore();
   const [modals, setModals] = useState({ teacher: false, assign: false });
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   const [filterDept, setFilterDept] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teachers'],
     queryFn: getAllTeachers,
-    staleTime: 1000 * 60 * 5,
-  });
-
-  const { data: departments = [] } = useQuery({
-    queryKey: ['departments'],
-    queryFn: getAllDepartments,
+    staleTime: Infinity,
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteTeacher,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teachers'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      setDeleteConfirm({ open: false, id: null });
+    }
   });
 
   const filteredTeachers = useMemo(() => {
+    const query = search.toLowerCase().trim();
     return teachers.filter(t => {
-      const matchesSearch = `${t.first_name} ${t.last_name} ${t.faculty_id}`.toLowerCase().includes(search.toLowerCase());
+      const fullName = `${t.first_name} ${t.last_name}`.toLowerCase();
+      const matchesSearch = fullName.includes(query) || t.faculty_id.toLowerCase().includes(query);
       const matchesDept = filterDept ? t.dept_id === filterDept : true;
       return matchesSearch && matchesDept;
     });
@@ -44,144 +47,151 @@ const Teachers = () => {
     setModals(prev => ({ ...prev, [type]: true }));
   };
 
+  const formatName = (str) => {
+    if (!str) return "";
+    return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
+  const getDeptName = (id) => {
+    return departments.find(d => d._id === id)?.name || 'General';
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 md:pt-32 pb-16 px-4 md:px-8">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-10 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="flex items-center gap-2 text-violet-600 mb-2">
-              <GraduationCap size={16} className="animate-bounce" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Faculty Management</span>
+        <header className="mb-10 flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
+          <div className="flex items-center gap-5 w-full md:w-auto">
+            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
+              <GraduationCap size={32} />
             </div>
-            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
-              Teacher <span className="text-violet-600">Portal</span>
-            </h1>
-            <p className="text-xs font-bold text-zinc-400 mt-2 tracking-widest uppercase">{teachers.length} Active Personnel</p>
-          </motion.div>
-          <Button icon={UserPlus} size="lg" onClick={() => openModal('teacher')}>Register Teacher</Button>
+            <div>
+              <h1 className="text-2xl font-black uppercase tracking-tighter dark:text-white leading-none">Faculty <span className="text-violet-600">Base</span></h1>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {teachers.length} PERSONNEL INDEXED
+              </p>
+            </div>
+          </div>
+          <Button variant="primary" icon={UserPlus} onClick={() => openModal('teacher')} className="w-full md:w-auto h-14 px-10 rounded-2xl">Add Personnel</Button>
         </header>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden"
-        >
-          <div className="p-6 border-b border-zinc-50 dark:border-zinc-800 flex flex-col md:flex-row gap-4 bg-zinc-50/30">
-            <div className="flex-1">
-              <Input
-                id="teacher-search"
-                name="teacher-search"
-                icon={Search}
-                placeholder="Find teacher by name or Faculty ID..."
-                value={search}
-                onChange={setSearch}
-                autoComplete="off"
-              />
-            </div>
-            <div className="relative md:w-72">
-              <select
-                id="dept-filter"
-                name="dept-filter"
-                value={filterDept}
-                onChange={(e) => setFilterDept(e.target.value)}
-                className="w-full h-11 pl-4 pr-10 rounded-xl bg-white dark:bg-zinc-800 text-sm font-bold border border-zinc-200 dark:border-zinc-700 outline-none focus:border-violet-500 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">All Departments</option>
-                {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-              </select>
-              <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-10">
+          <div className="lg:col-span-8">
+            <Input
+              id="teacher-search"
+              name="search"
+              icon={Search}
+              placeholder="Identify by faculty name or system ID..."
+              value={search}
+              onChange={setSearch}
+              className="h-14 shadow-sm"
+            />
           </div>
+          <div className="lg:col-span-4 relative group">
+            <select
+              id="dept-filter"
+              name="dept-filter"
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value)}
+              className="w-full h-14 pl-5 pr-12 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm font-black text-zinc-700 dark:text-zinc-200 appearance-none outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-500/5 transition-all cursor-pointer shadow-sm"
+            >
+              <option value="">All Departments</option>
+              {departments.map(d => <option key={d._id} value={d._id}>{d.name.toUpperCase()}</option>)}
+            </select>
+            <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+          </div>
+        </div>
 
-          <div className="overflow-x-auto hide-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 border-b dark:border-zinc-800">
-                  <th className="px-8 py-5">Full Name</th>
-                  <th className="px-8 py-5">Academic ID</th>
-                  <th className="px-8 py-5">Department</th>
-                  <th className="px-8 py-5">Status</th>
-                  <th className="px-8 py-5 text-right">Operations</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                {isLoading ? (
-                  <tr><td colSpan="5" className="py-32 text-center"><Loader text="Syncing Biometric Data..." /></td></tr>
-                ) : filteredTeachers.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="py-40 text-center">
-                      <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Search size={48} strokeWidth={1} />
-                        <p className="text-xs font-black uppercase tracking-[0.4em]">No Personnel Found</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredTeachers.map((t, idx) => (
-                  <motion.tr
-                    key={t._id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                    className="group hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-all"
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <AnimatePresence mode="popLayout">
+            {isLoading ? (
+              Array(6).fill(0).map((_, i) => (
+                <div key={i} className="h-72 rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 animate-pulse" />
+              ))
+            ) : filteredTeachers.map((t) => (
+              <motion.div
+                key={t._id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="group relative bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 p-6 transition-all hover:shadow-2xl hover:shadow-violet-600/10 hover:border-violet-600/30"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-2xl font-black text-violet-600 border border-zinc-100 dark:border-zinc-700 shadow-inner group-hover:bg-violet-600 group-hover:text-white transition-all duration-500 uppercase">
+                    {t.first_name[0]}{t.last_name[0]}
+                  </div>
+                  <div className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border ${t.is_active !== false ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20' : 'bg-red-500/5 text-red-600 border-red-500/20'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${t.is_active !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {t.is_active !== false ? 'Active' : 'Locked'}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-6">
+                  <h3 className="text-xl font-black text-zinc-900 dark:text-white leading-tight">{formatName(`${t.first_name} ${t.last_name}`)}</h3>
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Briefcase size={14} className="text-violet-500" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider truncate">{getDeptName(t.dept_id)}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-8">
+                  <div className="bg-zinc-50/50 dark:bg-zinc-800/40 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800/50">
+                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">Index ID</p>
+                    <p className="text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200">{t.faculty_id}</p>
+                  </div>
+                  <div className="bg-zinc-50/50 dark:bg-zinc-800/40 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800/50 overflow-hidden">
+                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1">System ID</p>
+                    <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">{t.email?.split('@')[0] || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    icon={BookOpen}
+                    onClick={() => openModal('assign', t)}
+                    className="flex-[2] h-12 rounded-xl"
                   >
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center font-black shadow-lg group-hover:scale-110 transition-transform uppercase">
-                          {t.first_name[0]}{t.last_name[0]}
-                        </div>
-                        <span className="text-sm font-black text-zinc-900 dark:text-white capitalize tracking-tight">{t.first_name} {t.last_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-black text-zinc-600 dark:text-zinc-400 font-mono">
-                        <Hash size={10} /> {t.faculty_id}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 capitalize">{t.dept_name}</span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${t.is_active !== false
-                          ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20'
-                          : 'bg-red-500/5 text-red-600 border-red-500/20'
-                        }`}>
-                        {t.is_active !== false && <CheckCircle2 size={10} />}
-                        {t.is_active !== false ? 'Active' : 'Off-Duty'}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                        <button onClick={() => openModal('assign', t)} className="p-2.5 bg-white dark:bg-zinc-800 shadow-sm border dark:border-zinc-700 hover:text-violet-600 hover:border-violet-200 rounded-xl transition-all"><BookOpen size={16} /></button>
-                        <button onClick={() => openModal('teacher', t)} className="p-2.5 bg-white dark:bg-zinc-800 shadow-sm border dark:border-zinc-700 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 rounded-xl transition-all"><Edit3 size={16} /></button>
-                        <button onClick={() => deleteMutation.mutate(t._id)} className="p-2.5 bg-white dark:bg-zinc-800 shadow-sm border dark:border-zinc-700 hover:text-red-600 hover:border-red-200 rounded-xl transition-all"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+                    Assign Course
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={Edit3}
+                    onClick={() => openModal('teacher', t)}
+                    className="flex-1 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-none"
+                  />
+                  <Button
+                    variant="secondary"
+                    icon={Trash2}
+                    onClick={() => setDeleteConfirm({ open: true, id: t._id })}
+                    className="flex-1 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 border border-red-100 dark:border-red-500/20"
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <Suspense fallback={<Loader fullPage />}>
-        {modals.teacher && (
-          <TeacherModal
-            isOpen={modals.teacher}
-            onClose={() => setModals(prev => ({ ...prev, teacher: false }))}
-            editData={selected}
-            departments={departments}
-          />
-        )}
-        {modals.assign && (
-          <AssignModal
-            isOpen={modals.assign}
-            onClose={() => setModals(prev => ({ ...prev, assign: false }))}
-            teacher={selected}
-            departments={departments}
-          />
-        )}
+      <Suspense fallback={null}>
+        {modals.teacher && <TeacherModal isOpen={modals.teacher} onClose={() => setModals(p => ({ ...p, teacher: false }))} editData={selected} departments={departments} />}
+        {modals.assign && <AssignModal isOpen={modals.assign} onClose={() => setModals(p => ({ ...p, assign: false }))} teacher={selected} />}
       </Suspense>
+
+      <Modal isOpen={deleteConfirm.open} onClose={() => setDeleteConfirm({ open: false, id: null })} size="sm">
+        <div className="text-center py-4 px-2">
+          <div className="w-20 h-20 bg-red-50 dark:bg-red-950 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 text-red-600 border border-red-100 dark:border-red-900 shadow-2xl">
+            <Trash2 size={36} />
+          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tighter dark:text-white mb-2">Revoke Access?</h2>
+          <p className="text-sm font-bold text-zinc-500 mb-8 px-6 leading-relaxed">This will delete the faculty registry and revoke all portal permissions. This action is final.</p>
+          <div className="flex gap-3 px-2">
+            <Button variant="ghost" className="flex-1 h-12 rounded-2xl" onClick={() => setDeleteConfirm({ open: false, id: null })}>Discard</Button>
+            <Button variant="danger" className="flex-[1.5] h-12 rounded-2xl shadow-xl shadow-red-500/20" isLoading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleteConfirm.id)}>Delete Registry</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

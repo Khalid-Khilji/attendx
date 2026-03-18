@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from '@tanstack/react-form';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookMarked, GraduationCap, ArrowRight } from 'lucide-react';
-import { getAllSemesters, getAllAcademicYears, getEnrollmentHistory, enrollStudent, promoteStudent } from '../../api/index';
-import { Modal, Button, Select, SelectOption } from '../../components/index';
+import { BookMarked, ArrowRight, ChevronDown, Award } from 'lucide-react';
+import { getAllSemesters, getEnrollmentHistory, enrollStudent, promoteStudent } from '../../api/index';
+import { Modal, Button } from '../../components/index';
+import useAdminStore from '../../stores/admin';
 
-const EnrollModal = ({ isOpen, onClose, student, departments = [] }) => {
+const EnrollModal = ({ isOpen, onClose, student }) => {
     const queryClient = useQueryClient();
+    const { departments, academicYears: cachedYears } = useAdminStore();
     const [selectedDept, setSelectedDept] = useState(student?.dept_id || '');
     const [promoteMode, setPromoteMode] = useState(false);
 
@@ -15,17 +17,13 @@ const EnrollModal = ({ isOpen, onClose, student, departments = [] }) => {
         queryKey: ['semesters', selectedDept],
         queryFn: () => getAllSemesters(selectedDept),
         enabled: !!selectedDept,
-    });
-
-    const { data: academicYears = [] } = useQuery({
-        queryKey: ['academic-years'],
-        queryFn: getAllAcademicYears,
+        staleTime: Infinity
     });
 
     const { data: history = [] } = useQuery({
         queryKey: ['enrollment-history', student?._id],
         queryFn: () => getEnrollmentHistory(student?._id),
-        enabled: !!student?._id,
+        enabled: !!student?._id && isOpen,
     });
 
     const activeEnrollment = history.find(h => h.status === 'active');
@@ -61,15 +59,18 @@ const EnrollModal = ({ isOpen, onClose, student, departments = [] }) => {
         }
     });
 
+    const selectBaseClass = "w-full px-4 py-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-bold outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-500/5 appearance-none transition-all cursor-pointer group-hover:border-zinc-300 dark:group-hover:border-zinc-700 uppercase";
+    const labelClass = "text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 ml-1 mb-1.5 block";
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-violet-200 dark:shadow-violet-900/30">
+        <Modal isOpen={isOpen} onClose={onClose} size="md">
+            <div className="flex items-center gap-4 mb-8 px-2 pt-2">
+                <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-violet-600/20 shrink-0">
                     <BookMarked size={22} />
                 </div>
                 <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight dark:text-white leading-tight">Student Enrollment</h2>
-                    <p className="text-xs font-bold text-violet-600 capitalize">{student?.first_name} {student?.last_name} • {student?.roll_no}</p>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter dark:text-white leading-none text-zinc-900">Academic <span className="text-violet-600">Entry</span></h2>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-2 uppercase tracking-widest">{student?.first_name} {student?.last_name}</p>
                 </div>
             </div>
 
@@ -77,136 +78,167 @@ const EnrollModal = ({ isOpen, onClose, student, departments = [] }) => {
                 {activeEnrollment ? (
                     promoteMode ? (
                         <motion.form
-                            key="promote-form"
+                            key="promote-form-container"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); promoteForm.handleSubmit(); }}
-                            className="space-y-5"
+                            className="space-y-6 px-2"
                         >
-                            <promoteForm.Field name="next_sem_id">
-                                {(field) => (
-                                    <Select
-                                        label="Target Semester"
-                                        name={field.name}
-                                        id={field.name}
-                                        value={field.state.value}
-                                        onChange={field.handleChange}
-                                        required
-                                    >
-                                        {semesters.filter(s => s._id !== activeEnrollment.sem_id).map(s => (
-                                            <SelectOption key={s._id} value={s._id}>Semester {s.sem_number}</SelectOption>
-                                        ))}
-                                    </Select>
-                                )}
-                            </promoteForm.Field>
+                            <div>
+                                <label htmlFor="next_sem_id" className={labelClass}>Target Semester</label>
+                                <div className="relative group">
+                                    <promoteForm.Field name="next_sem_id">
+                                        {(f) => (
+                                            <select
+                                                id="next_sem_id"
+                                                name="next_sem_id"
+                                                value={f.state.value}
+                                                onChange={(e) => f.handleChange(e.target.value)}
+                                                className={selectBaseClass}
+                                                required
+                                            >
+                                                <option value="" disabled>SELECT SEMESTER</option>
+                                                {semesters.filter(s => s._id !== activeEnrollment.sem_id).map(s => (
+                                                    <option key={s._id} value={s._id}>SEMESTER {s.sem_number}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </promoteForm.Field>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                                </div>
+                            </div>
 
-                            <promoteForm.Field name="next_academic_year_id">
-                                {(field) => (
-                                    <Select
-                                        label="Academic Year"
-                                        name={field.name}
-                                        id={field.name}
-                                        value={field.state.value}
-                                        onChange={field.handleChange}
-                                        required
-                                    >
-                                        {academicYears.map(y => (
-                                            <SelectOption key={y._id} value={y._id}>{y.label}</SelectOption>
-                                        ))}
-                                    </Select>
-                                )}
-                            </promoteForm.Field>
+                            <div>
+                                <label htmlFor="next_academic_year_id" className={labelClass}>Academic Session</label>
+                                <div className="relative group">
+                                    <promoteForm.Field name="next_academic_year_id">
+                                        {(f) => (
+                                            <select
+                                                id="next_academic_year_id"
+                                                name="next_academic_year_id"
+                                                value={f.state.value}
+                                                onChange={(e) => f.handleChange(e.target.value)}
+                                                className={selectBaseClass}
+                                                required
+                                            >
+                                                <option value="" disabled>SELECT YEAR</option>
+                                                {cachedYears.map(y => (
+                                                    <option key={y._id} value={y._id}>{y.label}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </promoteForm.Field>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                                </div>
+                            </div>
 
-                            <div className="flex gap-3 pt-2">
-                                <Button variant="ghost" className="flex-1" onClick={() => setPromoteMode(false)}>Back</Button>
-                                <Button type="submit" className="flex-1" isLoading={promoteMutation.isPending} icon={ArrowRight} iconPosition="right">Promote</Button>
+                            <div className="flex gap-3 pt-4">
+                                <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-black" onClick={() => setPromoteMode(false)}>Discard</Button>
+                                <Button type="submit" className="flex-[2] h-14 rounded-2xl shadow-xl shadow-violet-500/10 font-black uppercase tracking-widest text-[11px]" isLoading={promoteMutation.isPending} icon={ArrowRight} iconPosition="right">Execute Promotion</Button>
                             </div>
                         </motion.form>
                     ) : (
                         <motion.div
-                            key="active-status"
-                            initial={{ opacity: 0, scale: 0.95 }}
+                            key="active-status-view"
+                            initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="space-y-6"
+                            className="space-y-6 px-2"
                         >
-                            <div className="bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-800 flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-[0.2em] mb-1">Current Status</p>
-                                    <p className="text-lg font-black text-emerald-600">Active Enrollment</p>
-                                    <p className="text-sm font-bold text-emerald-500/80">Semester {semesters.find(s => s._id === activeEnrollment.sem_id)?.sem_number || '—'}</p>
+                            <div className="bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] p-8 border border-zinc-100 dark:border-zinc-800 text-center relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Award size={80} className="text-violet-600" />
                                 </div>
-                                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                    <GraduationCap size={24} />
+                                <p className="text-[10px] font-black text-violet-600 uppercase tracking-[0.3em] mb-4">Verification Active</p>
+                                <h3 className="text-3xl font-black text-zinc-900 dark:text-white mb-3 uppercase tracking-tighter leading-none">Current State</h3>
+                                <div className="inline-flex items-center gap-2 bg-white dark:bg-zinc-800 px-5 py-2.5 rounded-full shadow-sm border dark:border-zinc-700">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-xs font-black text-zinc-700 dark:text-zinc-200 tracking-widest uppercase">
+                                        SEMESTER {semesters.find(s => s._id === activeEnrollment.sem_id)?.sem_number || 'LOADING...'}
+                                    </span>
                                 </div>
                             </div>
-                            <Button className="w-full" onClick={() => setPromoteMode(true)} icon={ArrowRight} iconPosition="right">Promote to Next Semester</Button>
+                            <Button variant="primary" className="w-full h-14 rounded-2xl shadow-xl shadow-violet-500/20 font-black uppercase tracking-widest text-[11px]" onClick={() => setPromoteMode(true)} icon={ArrowRight} iconPosition="right">Initialize Promotion</Button>
                         </motion.div>
                     )
                 ) : (
                     <motion.form
-                        key="enroll-form"
+                        key="initial-enroll-form"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
                         onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); enrollForm.handleSubmit(); }}
-                        className="space-y-5"
+                        className="space-y-6 px-2"
                     >
-                        <Select
-                            label="Department"
-                            name="enroll_dept"
-                            id="enroll_dept"
-                            value={selectedDept}
-                            onChange={(v) => setSelectedDept(v)}
-                            required
-                        >
-                            {departments.map(d => (
-                                <SelectOption key={d._id} value={d._id}>{d.name}</SelectOption>
-                            ))}
-                        </Select>
-
-                        <enrollForm.Field name="sem_id">
-                            {(field) => (
-                                <Select
-                                    label="Semester"
-                                    name={field.name}
-                                    id={field.name}
-                                    value={field.state.value}
-                                    onChange={field.handleChange}
-                                    required
-                                    disabled={!selectedDept}
-                                >
-                                    {semesters.map(s => (
-                                        <SelectOption key={s._id} value={s._id}>Semester {s.sem_number}</SelectOption>
-                                    ))}
-                                </Select>
-                            )}
-                        </enrollForm.Field>
-
-                        <enrollForm.Field name="academic_year_id">
-                            {(field) => (
-                                <Select
-                                    label="Academic Year"
-                                    name={field.name}
-                                    id={field.name}
-                                    value={field.state.value}
-                                    onChange={field.handleChange}
+                        <div>
+                            <label htmlFor="dept_id" className={labelClass}>Target Department</label>
+                            <div className="relative group">
+                                <select
+                                    id="dept_id"
+                                    name="dept_id"
+                                    value={selectedDept}
+                                    onChange={(e) => setSelectedDept(e.target.value)}
+                                    className={selectBaseClass}
                                     required
                                 >
-                                    {academicYears.map(y => (
-                                        <SelectOption key={y._id} value={y._id}>{y.label}</SelectOption>
-                                    ))}
-                                </Select>
-                            )}
-                        </enrollForm.Field>
+                                    <option value="" disabled>CHOOSE DEPARTMENT</option>
+                                    {departments.map(d => <option key={d._id} value={d._id}>{d.name.toUpperCase()}</option>)}
+                                </select>
+                                <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                            </div>
+                        </div>
 
-                        <Button type="submit" className="w-full mt-2" isLoading={enrollMutation.isPending}>Enroll Student</Button>
+                        <div>
+                            <label htmlFor="sem_id" className={labelClass}>Semester Index</label>
+                            <div className="relative group">
+                                <enrollForm.Field name="sem_id">
+                                    {(f) => (
+                                        <select
+                                            id="sem_id"
+                                            name="sem_id"
+                                            value={f.state.value}
+                                            onChange={(e) => f.handleChange(e.target.value)}
+                                            className={selectBaseClass}
+                                            required
+                                            disabled={!selectedDept}
+                                        >
+                                            <option value="" disabled>CHOOSE SEMESTER</option>
+                                            {semesters.map(s => <option key={s._id} value={s._id}>SEMESTER {s.sem_number}</option>)}
+                                        </select>
+                                    )}
+                                </enrollForm.Field>
+                                <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="academic_year_id" className={labelClass}>Academic Timeline</label>
+                            <div className="relative group">
+                                <enrollForm.Field name="academic_year_id">
+                                    {(f) => (
+                                        <select
+                                            id="academic_year_id"
+                                            name="academic_year_id"
+                                            value={f.state.value}
+                                            onChange={(e) => f.handleChange(e.target.value)}
+                                            className={selectBaseClass}
+                                            required
+                                        >
+                                            <option value="" disabled>CHOOSE SESSION</option>
+                                            {cachedYears.map(y => <option key={y._id} value={y._id}>{y.label}</option>)}
+                                        </select>
+                                    )}
+                                </enrollForm.Field>
+                                <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-[11px]" onClick={onClose}>Discard</Button>
+                            <Button type="submit" className="flex-[2] h-14 rounded-2xl shadow-xl shadow-violet-500/10 font-black uppercase tracking-widest text-[11px]" isLoading={enrollMutation.isPending}>Commit Enrollment</Button>
+                        </div>
                     </motion.form>
                 )}
             </AnimatePresence>
-
-            <Button variant="ghost" className="w-full mt-6" onClick={onClose}>Close</Button>
         </Modal>
     );
 };

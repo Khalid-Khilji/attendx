@@ -1,22 +1,22 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from utils.face import _get_face_app
 from routes import (
-    users_route,
-    department_route,
-    academic_year_route,
-    semester_route,
-    course_route,
-    course_teacher_route,
-    teacher_detail_route,
-    student_detail_route,
-    student_enrollment_route,
-    timetable_route,
-    attendance_session_route,
-    attendance_record_route,
+    users_route, department_route, academic_year_route,
+    semester_route, course_route, course_teacher_route,
+    teacher_detail_route, student_detail_route,
+    student_enrollment_route, timetable_route,
+    attendance_session_route, attendance_record_route,
     activity_log_route
 )
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    _get_face_app()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

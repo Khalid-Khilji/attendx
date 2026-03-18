@@ -3,12 +3,15 @@ import { LogOut, AlertTriangle } from 'lucide-react'
 import { Modal, Button } from '../index'
 import useAuthStore from '../../stores/auth'
 import { toast } from 'react-toastify'
+import useAdminStore from '../../stores/admin'
 
 const Logout = ({ isOpen, onClose }) => {
   const { logout } = useAuthStore()
+  const { clearAcademicData } = useAdminStore();
 
   const handleLogout = () => {
     logout()
+    clearAcademicData();
     onClose()
     toast.success('Logged out successfully', {
       autoClose: 2000,

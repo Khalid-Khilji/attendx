@@ -1,6 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Calendar, UserCheck, ShieldCheck, ChevronLeft, ChevronRight,ChevronDown, Clock, Tag, Box, Search, XCircle, SlidersHorizontal } from 'lucide-react';
+import {
+  Activity, Calendar, UserCheck, ShieldCheck,
+  ChevronLeft, ChevronRight, ChevronDown, Clock,
+  Tag, Box, XCircle, SlidersHorizontal,
+  Fingerprint
+} from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Input, Loader } from '../../components/index';
 import { getAllLogs } from '../../api/index';
@@ -21,39 +26,56 @@ const AdminLog = () => {
     queryKey: ['logs', filters],
     queryFn: () => getAllLogs(filters),
     placeholderData: (previousData) => previousData,
-    staleTime: 5000,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
   });
 
   const logsList = useMemo(() => data?.logs || [], [data]);
   const totalPages = data?.pages || 1;
+
+  const updateFilter = (key, val) => {
+    setFilters(prev => ({ ...prev, [key]: val, page: 1 }));
+  };
 
   const clearFilters = () => {
     setFilters({ role: '', start_date: '', end_date: '', action: '', page: 1, limit: 10 });
     queryClient.invalidateQueries({ queryKey: ['logs'] });
   };
 
+  const getActionStyles = (action) => {
+    const styles = {
+      CREATE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+      UPDATE: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+      DELETE: "bg-red-500/10 text-red-600 border-red-500/20",
+      PROMOTE: "bg-violet-500/10 text-violet-600 border-violet-500/20",
+      LOGIN: "bg-blue-500/10 text-blue-600 border-blue-500/20"
+    };
+    return styles[action] || "bg-zinc-500/10 text-zinc-600 border-zinc-500/20";
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-24 md:pt-32 pb-12 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
-
-        <header className="mb-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <div className="flex items-center gap-2 text-violet-600 mb-2">
-              <Activity size={16} className="animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">System Intelligence</span>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <header className="mb-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30 shrink-0">
+              <Activity size={28} className="md:w-8 md:h-8" />
             </div>
-            <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-white">
-              Audit <span className="text-violet-600">Trail</span>
-            </h1>
-          </motion.div>
+            <div>
+              <h1 className="text-xl md:text-3xl font-black uppercase tracking-tighter dark:text-white leading-none">System <span className="text-violet-600">Audit</span></h1>
+              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {data?.total || 0} Total Records
+              </p>
+            </div>
+          </div>
 
-          <div className="flex items-center gap-2 w-full lg:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <Button
               variant="secondary"
-              className="lg:hidden flex-1"
+              className="lg:hidden flex-1 h-12 md:h-14"
               onClick={() => setShowFilters(!showFilters)}
               icon={SlidersHorizontal}
             >
@@ -61,29 +83,28 @@ const AdminLog = () => {
             </Button>
             <div className="hidden lg:flex gap-3">
               <Input
-                id="log-action"
-                name="action"
-                hideLabel
-                placeholder="Action (e.g. CREATE)"
-                className="w-56"
+                id="audit-action-desktop"
+                name="audit_action"
+                autoComplete="off"
+                placeholder="ACTION (E.G. CREATE)"
+                className="w-56 h-14"
                 icon={Tag}
                 value={filters.action}
-                onChange={(val) => setFilters(prev => ({ ...prev, action: val.toUpperCase(), page: 1 }))}
-                autoComplete="off"
+                onChange={(val) => updateFilter('action', val.toUpperCase())}
               />
-              <div className="relative">
+              <div className="relative group">
                 <select
-                  id="log-role"
-                  name="role"
+                  id="audit-role-desktop"
+                  name="audit_role"
                   value={filters.role}
-                  onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value, page: 1 }))}
-                  className="pl-4 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold uppercase tracking-widest outline-none focus:border-violet-500 appearance-none cursor-pointer"
+                  onChange={(e) => updateFilter('role', e.target.value)}
+                  className="w-full h-14 pl-5 pr-12 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-black text-zinc-700 dark:text-zinc-200 appearance-none outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-500/5 transition-all cursor-pointer shadow-sm"
                 >
-                  <option value="">All Roles</option>
-                  <option value="admin">Admin Only</option>
-                  <option value="teacher">Teachers Only</option>
+                  <option value="">Origin: All</option>
+                  <option value="admin">Root: Admin</option>
+                  <option value="teacher">Faculty</option>
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
               </div>
             </div>
           </div>
@@ -92,186 +113,174 @@ const AdminLog = () => {
         <AnimatePresence>
           {(showFilters || window.innerWidth > 1024) && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
+              initial={window.innerWidth <= 1024 ? { height: 0, opacity: 0 } : {}}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 overflow-hidden lg:overflow-visible"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-8 overflow-hidden"
             >
-              <div className="lg:col-span-2">
-                <Input
-                  label="From Date"
-                  id="log-start"
-                  name="start_date"
-                  type="date"
-                  icon={Calendar}
-                  value={filters.start_date}
-                  onChange={(val) => setFilters(prev => ({ ...prev, start_date: val, page: 1 }))}
-                />
-              </div>
-              <div className="lg:col-span-2">
-                <Input
-                  label="To Date"
-                  id="log-end"
-                  name="end_date"
-                  type="date"
-                  icon={Calendar}
-                  value={filters.end_date}
-                  onChange={(val) => setFilters(prev => ({ ...prev, end_date: val, page: 1 }))}
-                />
-              </div>
-              <div className="flex items-end">
+              <Input
+                id="audit-start-date"
+                name="start_date"
+                label="Timeline Start"
+                type="date"
+                icon={Calendar}
+                value={filters.start_date}
+                onChange={(val) => updateFilter('start_date', val)}
+                className="h-12 md:h-14"
+              />
+              <Input
+                id="audit-end-date"
+                name="end_date"
+                label="Timeline End"
+                type="date"
+                icon={Calendar}
+                value={filters.end_date}
+                onChange={(val) => updateFilter('end_date', val)}
+                className="h-12 md:h-14"
+              />
+              <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button
                   variant="ghost"
-                  className="w-full h-11 border-dashed border-2"
+                  className="w-full h-12 md:h-14 border-dashed border-2 bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-red-500"
                   onClick={clearFilters}
                   icon={XCircle}
                 >
-                  Clear All
+                  Reset Parameters
                 </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.div
-          layout
-          className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden relative"
-        >
+        <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden relative">
           {isFetching && !isLoading && (
-            <div className="absolute top-0 left-0 w-full h-1 bg-violet-500/20 overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-violet-500/10 overflow-hidden z-20">
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: '100%' }}
-                transition={{ repeat: Infinity, duration: 1 }}
-                className="w-1/3 h-full bg-violet-600 shadow-[0_0_10px_violet]"
+                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                className="w-1/3 h-full bg-violet-600"
               />
             </div>
           )}
 
-          <div className="overflow-x-auto hide-scrollbar">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full border-collapse min-w-[800px]">
               <thead>
-                <tr className="border-b border-zinc-50 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/30">
-                  <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Time / Event</th>
-                  <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Initiator</th>
-                  <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Execution</th>
-                  <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Target</th>
+                <tr className="bg-zinc-50/50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 text-zinc-400">
+                  <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Timestamp</th>
+                  <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Initiator</th>
+                  <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Operation</th>
+                  <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Target</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                 {isLoading ? (
-                  <tr><td colSpan="4" className="py-32"><Loader text="Accessing Secure Logs..." /></td></tr>
+                  <tr><td colSpan="4" className="py-40"><Loader text="Syncing Records..." /></td></tr>
                 ) : logsList.length > 0 ? (
                   logsList.map((log, idx) => (
                     <motion.tr
                       key={log._id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-all group cursor-default"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/20 transition-all group"
                     >
-                      <td className="px-8 py-5">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-zinc-900 dark:text-white font-bold text-xs uppercase tracking-tight">
-                            <Clock size={12} className="text-violet-500" />
-                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col whitespace-nowrap">
+                          <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-100 font-black text-xs md:text-sm uppercase">
+                            <Clock size={14} className="text-violet-500" />
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                           </div>
-                          <span className="text-[10px] font-medium text-zinc-400 ml-5">{new Date(log.timestamp).toLocaleDateString()}</span>
+                          <span className="text-[10px] md:text-xs font-bold text-zinc-400 ml-5 mt-0.5">
+                            {new Date(log.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 ${log.actor_role === 'admin'
-                              ? 'bg-linear-to-br from-violet-500 to-indigo-600 text-white'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shadow-md shrink-0 ${log.actor_role === 'admin' ? 'bg-zinc-900 text-white' : 'bg-violet-100 text-violet-600 dark:bg-violet-900/30'
                             }`}>
                             {log.actor_role === 'admin' ? <ShieldCheck size={18} /> : <UserCheck size={18} />}
                           </div>
-                          <div>
-                            <p className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tighter leading-none mb-1">{log.actor_name}</p>
-                            <p className="text-[9px] font-bold text-violet-500 uppercase tracking-widest">{log.faculty_id || log.actor_role}</p>
+                          <div className="min-w-0">
+                            <p className="text-xs md:text-sm font-black text-zinc-900 dark:text-white uppercase truncate tracking-tight">{log.actor_name}</p>
+                            <p className="text-[9px] md:text-[10px] font-bold text-violet-500 uppercase tracking-widest">{log.faculty_id || log.actor_role}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] inline-flex items-center gap-2 border ${log.action === 'CREATE' ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20' :
-                            log.action === 'DELETE' ? 'bg-red-500/5 text-red-600 border-red-500/20' :
-                              log.action === 'UPDATE' ? 'bg-amber-500/5 text-amber-600 border-amber-500/20' :
-                                'bg-zinc-500/5 text-zinc-600 border-zinc-500/20'
-                          }`}>
-                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${log.action === 'CREATE' ? 'bg-emerald-500' :
-                              log.action === 'DELETE' ? 'bg-red-500' : 'bg-amber-500'
-                            }`} />
+                      <td className="px-6 py-4">
+                        <div className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 border whitespace-nowrap ${getActionStyles(log.action)}`}>
+                          <Fingerprint size={12} className="opacity-50" />
                           {log.action}
                         </div>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl text-zinc-400 group-hover:text-violet-500 group-hover:bg-violet-500/5 transition-all">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3 min-w-[200px]">
+                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-violet-600 transition-colors shrink-0">
                             <Box size={16} />
                           </div>
-                          <div className="flex flex-col">
-                            <p className="text-xs text-zinc-900 dark:text-white font-black uppercase tracking-tight">
-                              <span className="text-zinc-400 font-medium">{log.entity}:</span> {log.entity_name}
+                          <div className="truncate">
+                            <p className="text-[11px] md:text-xs text-zinc-900 dark:text-zinc-100 font-black uppercase truncate">
+                              <span className="text-zinc-400 font-medium lowercase italic mr-1">[{log.entity}]</span>
+                              {log.entity_name}
                             </p>
-                            <p className="text-[9px] text-zinc-500 font-mono tracking-tighter mt-0.5">#{log.entity_id.slice(-12).toUpperCase()}</p>
+                            <p className="text-[9px] md:text-[10px] text-zinc-500 font-mono mt-0.5 opacity-50">REF: {log.entity_id.slice(-8).toUpperCase()}</p>
                           </div>
                         </div>
                       </td>
                     </motion.tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan="4" className="py-40 text-center">
-                      <div className="flex flex-col items-center gap-4 opacity-30">
-                        <Search size={48} strokeWidth={1} />
-                        <p className="text-xs font-black uppercase tracking-[0.4em]">No Logs Recovered</p>
-                      </div>
-                    </td>
-                  </tr>
+                  <tr><td colSpan="4" className="py-40 text-center text-[10px] font-black uppercase tracking-[0.5em] opacity-30">Null Sequence Detected</td></tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          <footer className="px-8 py-6 bg-zinc-50/50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-              Navigation <span className="text-violet-600 ml-2">{filters.page} / {totalPages}</span>
-            </span>
-            <div className="flex gap-2 w-full md:w-auto">
+          <footer className="px-6 md:px-8 py-6 bg-zinc-50/50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3 order-2 sm:order-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                Segment <span className="text-violet-600 mx-1">{filters.page}</span> / {totalPages}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
               <Button
                 variant="ghost"
-                size="sm"
-                className="flex-1 md:flex-none rounded-xl"
-                icon={ChevronLeft}
+                className="flex-1 sm:w-12 sm:h-12 p-0 border-zinc-200"
                 disabled={filters.page === 1}
                 onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                icon={ChevronLeft}
               />
-              <div className="flex gap-1">
-                {[...Array(Math.min(3, totalPages))].map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setFilters(prev => ({ ...prev, page: i + 1 }))}
-                    className={`w-8 h-8 rounded-lg text-[10px] font-bold transition-all ${filters.page === i + 1
-                        ? 'bg-violet-600 text-white'
-                        : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500'
-                      }`}
-                  >
-                    {i + 1}
-                  </button>
+
+              <div className="hidden md:flex gap-1.5">
+                {[...Array(totalPages)].map((_, i) => (
+                  (i === 0 || i === totalPages - 1 || (i >= filters.page - 2 && i <= filters.page)) && (
+                    <button
+                      key={i}
+                      onClick={() => setFilters(prev => ({ ...prev, page: i + 1 }))}
+                      className={`w-12 h-12 rounded-2xl text-[10px] font-black transition-all border ${filters.page === i + 1
+                        ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-xl scale-110'
+                        : 'bg-white dark:bg-zinc-900 text-zinc-400 border-zinc-100 dark:border-zinc-800 hover:border-violet-600'
+                        }`}
+                    >
+                      {i + 1}
+                    </button>
+                  )
                 ))}
               </div>
+
               <Button
                 variant="ghost"
-                size="sm"
-                className="flex-1 md:flex-none rounded-xl"
-                icon={ChevronRight}
+                className="flex-1 sm:w-12 sm:h-12 p-0 border-zinc-200"
                 disabled={filters.page >= totalPages}
                 onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                icon={ChevronRight}
               />
             </div>
           </footer>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

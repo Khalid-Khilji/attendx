@@ -23,7 +23,7 @@ const Input = ({
   return (
     <div className={`flex flex-col gap-1 w-full ${className}`}>
       {label && (
-        <label htmlFor={name} className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1">
+        <label htmlFor={id} className="text-xs font-medium text-gray-700 dark:text-gray-300 ml-1">
           {label}
         </label>
       )}
@@ -45,7 +45,7 @@ const Input = ({
           placeholder={placeholder}
           className={`
             w-full rounded-xl border px-4 py-2.5 text-sm transition-all outline-none
-            text-black dark:text-white bg-white dark:bg-gray-900
+            text-black dark:text-white bg-white dark:bg-zinc-900
             placeholder:text-gray-400 dark:placeholder:text-gray-500
             ${Icon ? 'pl-11' : ''}
             ${isPassword ? 'pr-12' : ''}

@@ -11,7 +11,7 @@ _executor = ThreadPoolExecutor(max_workers=2)
 def _get_face_app():
     global _face_app
     if _face_app is None:
-        _face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+        _face_app = FaceAnalysis(name="buffalo_l", allowed_modules=['detection', 'recognition'])
         _face_app.prepare(ctx_id=0, det_size=(640, 640))
     return _face_app
 
