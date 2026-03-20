@@ -135,3 +135,102 @@ async def get_teacher_dashboard(current_user):
         "todays_slots": todays_slots,
         "recent_sessions": sessions_with_course,
     }
+
+async def get_student_dashboard(current_user):
+    student_id = current_user["user_id"]
+
+    student, enrollment = await asyncio.gather(
+        db.student_details.find_one({"_id": student_id}),
+        db.student_enrollments.find_one({"student_id": student_id, "status": "active"})
+    )
+
+    if not student:
+        return {"error": "Student not found"}
+
+    sem_id = enrollment["sem_id"] if enrollment else None
+
+    attendance_pipeline = [
+        {"$match": {"student_id": student_id}},
+        {"$lookup": {"from": "attendance_sessions", "localField": "session_id", "foreignField": "_id", "as": "session"}},
+        {"$unwind": "$session"},
+        {"$lookup": {"from": "courses", "localField": "session.course_id", "foreignField": "_id", "as": "course"}},
+        {"$unwind": "$course"},
+        {"$group": {
+            "_id": "$session.course_id",
+            "course_name": {"$first": "$course.name"},
+            "course_code": {"$first": "$course.course_code"},
+            "total": {"$sum": 1},
+            "present": {"$sum": {"$cond": [{"$eq": ["$status", "present"]}, 1, 0]}}
+        }},
+        {"$project": {
+            "course_name": 1, "course_code": 1, "total": 1, "present": 1,
+            "percentage": {"$round": [{"$multiply": [{"$divide": ["$present", "$total"]}, 100]}, 1]}
+        }}
+    ]
+
+    todays_slots_pipeline = []
+    if sem_id:
+        today_day = datetime.utcnow().strftime("%A")
+        todays_slots_pipeline = [
+            {"$match": {"sem_id": sem_id, "day_of_week": today_day, "is_active": True}},
+            {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+            {"$unwind": "$course"},
+            {"$project": {
+                "_id": 1, "start_time": 1, "end_time": 1, "day_of_week": 1,
+                "course_name": "$course.name", "course_code": "$course.course_code"
+            }},
+            {"$sort": {"start_time": 1}}
+        ]
+
+    recent_records_pipeline = [
+        {"$match": {"student_id": student_id}},
+        {"$sort": {"marked_at": -1}},
+        {"$limit": 5},
+        {"$lookup": {"from": "attendance_sessions", "localField": "session_id", "foreignField": "_id", "as": "session"}},
+        {"$unwind": "$session"},
+        {"$lookup": {"from": "courses", "localField": "session.course_id", "foreignField": "_id", "as": "course"}},
+        {"$unwind": "$course"},
+        {"$project": {
+            "_id": 1, "status": 1, "marked_at": 1,
+            "course_name": "$course.name", "course_code": "$course.course_code",
+            "date": "$session.date"
+        }}
+    ]
+
+    tasks = [
+        db.attendance_records.aggregate(attendance_pipeline).to_list(None),
+        db.attendance_records.aggregate(recent_records_pipeline).to_list(None),
+    ]
+    if sem_id and todays_slots_pipeline:
+        tasks.append(db.timetable.aggregate(todays_slots_pipeline).to_list(None))
+
+    results = await asyncio.gather(*tasks)
+    course_attendance = results[0]
+    recent_records = results[1]
+    todays_slots = results[2] if len(results) > 2 else []
+
+    total_classes = sum(c["total"] for c in course_attendance)
+    total_present = sum(c["present"] for c in course_attendance)
+    overall_percentage = round((total_present / total_classes * 100), 1) if total_classes > 0 else 0
+
+    dept = await db.departments.find_one({"_id": student["dept_id"]})
+
+    return {
+        "student": {
+            "first_name": student["first_name"],
+            "last_name": student["last_name"],
+            "roll_no": student["roll_no"],
+            "dept_name": dept["name"] if dept else "",
+            "face_registered": student.get("face_embedding") is not None,
+            "sem_number": enrollment["sem_id"] if enrollment else None,
+        },
+        "stats": {
+            "total_classes": total_classes,
+            "total_present": total_present,
+            "overall_percentage": overall_percentage,
+            "total_courses": len(course_attendance),
+        },
+        "course_attendance": course_attendance,
+        "todays_slots": todays_slots,
+        "recent_records": recent_records,
+    }

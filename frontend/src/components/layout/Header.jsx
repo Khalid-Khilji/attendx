@@ -3,8 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Menu, X, Sun, Moon, LogOut, LayoutDashboard, ClipboardCheck,
-  GraduationCap, Users, UserCog, BookOpen, Activity, Calendar,
-  User
+  GraduationCap, Users, UserCog, BookOpen, Activity, Calendar
 } from 'lucide-react'
 import { Button } from '../index'
 import { ROLES } from '../../utils/constants'
@@ -52,11 +51,12 @@ const Header = () => {
         { name: 'Mark', path: '/teacher/attendance', icon: ClipboardCheck },
         { name: 'Courses', path: '/teacher/courses', icon: GraduationCap },
         { name: 'Schedule', path: '/teacher/timetable', icon: Calendar },
-        { name: 'Profile', path: '/teacher/profile', icon: User },
+        { name: 'Profile', path: '/teacher/profile', icon: UserCog },
       ],
       [ROLES.STUDENT]: [
         { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-        { name: 'History', path: '/student/attendance', icon: ClipboardCheck },
+        { name: 'Attendance', path: '/student/attendance', icon: ClipboardCheck },
+        { name: 'Schedule', path: '/student/timetable', icon: Calendar },
         { name: 'Profile', path: '/student/profile', icon: UserCog },
       ]
     }

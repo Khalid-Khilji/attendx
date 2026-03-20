@@ -10,4 +10,9 @@ const getTeacherDashboard = async () => {
     return response.data;
 };
 
-export { getAdminDashboard, getTeacherDashboard };
+const getStudentDashboard = async () => {
+    const response = await axiosInstance.get('/dashboard/student');
+    return response.data;
+};
+
+export { getAdminDashboard, getTeacherDashboard, getStudentDashboard };

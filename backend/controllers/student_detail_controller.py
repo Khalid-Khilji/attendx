@@ -5,6 +5,7 @@ from utils.logger import log_action
 from utils.imagekit import upload_image
 from utils.face import extract_embedding
 import uuid
+import asyncio
 from datetime import datetime
 
 async def create_student(current_user, data):
@@ -109,10 +110,20 @@ async def get_all_students(sem_id: str = None, dept_id: str = None):
     return [student_entity(s) for s in students]
 
 async def get_my_profile(current_user):
-    student = await db.student_details.find_one({"_id": current_user["user_id"]})
+    student_id = current_user["user_id"]
+    student, user = await asyncio.gather(
+        db.student_details.find_one({"_id": student_id}),
+        db.users.find_one({"_id": student_id}),
+    )
     if not student:
         return {"error": "Student not found"}
-    return student_entity(student)
+    dept = await db.departments.find_one({"_id": student["dept_id"]})
+    return {
+        **student_entity(student),
+        "email": user["email"] if user else "",
+        "dept_name": dept["name"] if dept else "",
+        "dept_short": dept["short_name"] if dept else "",
+    }
 
 async def upload_face(current_user, student_id: str, file):
     student = await db.student_details.find_one({"_id": student_id})

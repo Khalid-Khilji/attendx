@@ -38,6 +38,9 @@ const TeacherProfile = lazy(() => import('./pages/teacher/TeacherProfile'))
 const TeacherCourses = lazy(() => import('./pages/teacher/TeacherCourses'))
 
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'))
+const StudentAttendance = lazy(() => import('./pages/student/StudentAttendance'))
+const StudentProfile = lazy(() => import('./pages/student/StudentProfile'))
+const StudentTimetable = lazy(() => import('./pages/student/StudentTimetable'))
 
 const Unauthorized = lazy(() => import('./pages/errors/Unauthorized'))
 const NotFound = lazy(() => import('./pages/errors/NotFound'))
@@ -69,6 +72,9 @@ const router = createBrowserRouter(
 
       <Route path='student' element={<RoleGuard allowedRoles={[ROLES.STUDENT]} />}>
         <Route path='dashboard' element={<StudentDashboard />} />
+        <Route path='attendance' element={<StudentAttendance />} />
+        <Route path='profile' element={<StudentProfile />} />
+        <Route path='timetable' element={<StudentTimetable />} />
       </Route>
 
       <Route path='unauthorized' element={<Unauthorized />} />

@@ -35,6 +35,8 @@ import TimetableSlot from "./ui/TimetableSlot";
 import TimetableDayGroup from "./ui/TimeTableGroup";
 import SessionCard from "./ui/SessionCard";
 import AttendanceRecords from "./ui/AttendanceRecord";
+import AttendanceRow from "./ui/AttendanceRow";
+import ProfileSkeleton from "./ui/ProfileSkeleton";
 
 export {
     Header, Footer, ScrollToTop,
@@ -42,5 +44,5 @@ export {
     Login, Logout,
     DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal, RecordsModal, AttendanceModal,
     RoleGuard,
-    CourseCard, StudentRow, InfoRow, StatCard, TimetableSlot, TimetableDayGroup, SessionCard, AttendanceRecords
+    CourseCard, StudentRow, InfoRow, StatCard, TimetableSlot, TimetableDayGroup, SessionCard, AttendanceRecords, AttendanceRow, ProfileSkeleton
 };

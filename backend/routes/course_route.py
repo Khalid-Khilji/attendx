@@ -42,6 +42,6 @@ async def my_courses(
 @router.get("/{sem_id}")
 async def list_courses(
     sem_id: str,
-    current_user=Depends(role_required(["admin", "teacher"]))
+    current_user=Depends(role_required(["admin", "teacher", "student"]))
 ):
     return await get_all_courses(sem_id)

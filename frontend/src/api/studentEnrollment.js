@@ -36,4 +36,13 @@ const getSemStudents = async (semId) => {
     }
 };
 
-export { enrollStudent, promoteStudent, getEnrollmentHistory, getSemStudents };
+const getMyEnrollment = async () => {
+    try {
+        const response = await axiosInstance.get(`/enrollments/history/me`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error.message;
+    }
+};
+
+export { enrollStudent, promoteStudent, getEnrollmentHistory, getSemStudents, getMyEnrollment };

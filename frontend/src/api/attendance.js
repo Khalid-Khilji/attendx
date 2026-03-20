@@ -41,11 +41,10 @@ const getSessionRecords = async (sessionId) => {
     }
 };
 
-const getStudentAttendance = async (studentId, courseId = null) => {
+const getMyAttendance = async (courseId = null) => {
     try {
-        const response = await axiosInstance.get(`/attendance/student/${studentId}`, {
-            params: { course_id: courseId }
-        });
+        const url = courseId ? `/attendance/my?course_id=${courseId}` : '/attendance/my';
+        const response = await axiosInstance.get(url);
         return response.data;
     } catch (error) {
         throw error.response?.data || error.message;
@@ -63,5 +62,5 @@ const reviewAttendanceRecord = async (recordId, data) => {
 
 export {
     createSession, getCourseSessions, markAttendanceByFrames,
-    getSessionRecords, getStudentAttendance, reviewAttendanceRecord
+    getSessionRecords, getMyAttendance, reviewAttendanceRecord
 };

@@ -4,7 +4,7 @@ from controllers.attendance_record_controller import (
     mark_attendance,
     get_session_records,
     get_student_attendance,
-    update_record_status
+    update_record_status,
 )
 from utils.dependencies import role_required
 
@@ -24,13 +24,12 @@ async def session_records(
 ):
     return await get_session_records(session_id)
 
-@router.get("/student/{student_id}")
-async def student_attendance(
-    student_id: str,
+@router.get("/my")
+async def my_attendance(
     course_id: str = None,
-    current_user=Depends(role_required(["admin", "teacher", "student"]))
+    current_user=Depends(role_required(["student"]))
 ):
-    return await get_student_attendance(student_id, course_id)
+    return await get_student_attendance(current_user["user_id"], course_id)
 
 @router.patch("/review/{record_id}")
 async def review_record(

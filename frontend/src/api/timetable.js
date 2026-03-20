@@ -20,9 +20,9 @@ const getSemTimetable = async (semId) => {
     return response.data;
 };
 
-const getMyTimetable = async () => {
-    const response = await axiosInstance.get('/timetable/my');
+const getStudentTimetable = async () => {
+    const response = await axiosInstance.get('/timetable/student');
     return response.data;
 };
 
-export { createSlot, updateSlot, deleteSlot, getSemTimetable, getMyTimetable };
+export { createSlot, updateSlot, deleteSlot, getSemTimetable, getStudentTimetable };
