@@ -25,4 +25,9 @@ const getStudentTimetable = async () => {
     return response.data;
 };
 
-export { createSlot, updateSlot, deleteSlot, getSemTimetable, getStudentTimetable };
+const getTeacherTimetable = async () => {
+    const response = await axiosInstance.get('/timetable/my');
+    return response.data;
+};
+
+export { createSlot, updateSlot, deleteSlot, getSemTimetable, getStudentTimetable, getTeacherTimetable };

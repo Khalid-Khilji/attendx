@@ -28,7 +28,7 @@ const TeacherDashboard = () => {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
       <div className="max-w-5xl mx-auto space-y-6">
 
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-4 px-2">
             <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-600/20 shrink-0">
               <LayoutDashboard size={24} />
@@ -60,7 +60,7 @@ const TeacherDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="lg:col-span-7 bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
             <div className="px-6 py-5 border-b border-zinc-50 dark:border-zinc-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Calendar size={18} className="text-violet-600" />
@@ -95,12 +95,12 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
+          <div className="lg:col-span-5 bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
             <div className="px-6 py-5 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3">
               <History size={18} className="text-violet-600" />
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Recent Attendance</h2>
             </div>
-            <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-[400px] hide-scrollbar">
+            <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-100 hide-scrollbar">
               {isLoading ? [...Array(3)].map((_, i) => <div key={i} className="h-16 animate-pulse bg-zinc-50/50" />) :
                 recent_sessions.length === 0 ? (
                   <div className="py-20 text-center opacity-30">

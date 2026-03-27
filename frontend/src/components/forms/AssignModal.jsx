@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Star, X, Users, BadgeCheck, ChevronDown, Award } from 'lucide-react';
-import { getAllSemesters, getAllCourses, getCourseTeachers, assignTeacherToCourse, removeTeacherFromCourse } from '../../api/index';
+import { Star, X, Users, BadgeCheck, ChevronDown, Award, Hash } from 'lucide-react';
+import { getAllSemesters, getAllCourses, getCourseTeachers, assignTeacherToCourse, removeTeacherFromCourse, getSemBatches } from '../../api/index';
 import { Modal, Button } from '../../components/index';
 import useAdminStore from '../../stores/admin';
 
 const AssignModal = ({ isOpen, onClose, teacher }) => {
     const queryClient = useQueryClient();
     const { departments } = useAdminStore();
-    
+
     const [selectedSem, setSelectedSem] = useState('');
     const [selectedCourse, setSelectedCourse] = useState('');
+    const [selectedBatch, setSelectedBatch] = useState('');
     const [isPrimary, setIsPrimary] = useState(false);
 
     const teacherDeptId = teacher?.dept_id || '';
@@ -30,6 +31,13 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
         staleTime: Infinity
     });
 
+    const { data: batches = [] } = useQuery({
+        queryKey: ['batches', selectedSem],
+        queryFn: () => getSemBatches(selectedSem),
+        enabled: !!selectedSem,
+        staleTime: Infinity
+    });
+
     const { data: assigned = [] } = useQuery({
         queryKey: ['course-teachers', selectedCourse],
         queryFn: () => getCourseTeachers(selectedCourse),
@@ -38,7 +46,10 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
 
     const assignMutation = useMutation({
         mutationFn: assignTeacherToCourse,
-        onSuccess: () => queryClient.invalidateQueries(['course-teachers', selectedCourse]),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['course-teachers', selectedCourse]);
+            setSelectedBatch('');
+        },
     });
 
     const removeMutation = useMutation({
@@ -46,7 +57,10 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
         onSuccess: () => queryClient.invalidateQueries(['course-teachers', selectedCourse]),
     });
 
-    const alreadyAssigned = assigned.some(a => a.teacher_id === teacher?._id);
+    const alreadyAssigned = assigned.some(a =>
+        a.teacher_id === teacher?._id &&
+        (selectedBatch ? a.batch_id === selectedBatch : !a.batch_id)
+    );
 
     const selectBase = "w-full h-12 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-bold outline-none focus:border-violet-600 appearance-none transition-all shadow-sm disabled:opacity-60 disabled:bg-zinc-50 dark:disabled:bg-zinc-800/50";
     const labelStyle = "text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1 mb-2 block";
@@ -65,9 +79,9 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
 
             <div className="space-y-5">
                 <div className="flex flex-col">
-                    <label htmlFor='dept' className={labelStyle}>Faculty Department</label>
+                    <label className={labelStyle}>Faculty Department</label>
                     <div className="relative group">
-                        <select id='dept' name='dept' className={selectBase} value={teacherDeptId} disabled={true}>
+                        <select className={selectBase} value={teacherDeptId} disabled={true}>
                             {departments.map(d => (
                                 <option key={d._id} value={d._id}>{d.name.toUpperCase()}</option>
                             ))}
@@ -77,13 +91,12 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
                 </div>
 
                 <div className="flex flex-col">
-                    <label htmlFor="sem-select" className={labelStyle}>Academic Level</label>
+                    <label className={labelStyle}>Academic Level</label>
                     <div className="relative group">
-                        <select 
-                            id="sem-select"
+                        <select
                             className={selectBase}
                             value={selectedSem}
-                            onChange={(e) => { setSelectedSem(e.target.value); setSelectedCourse(''); }}
+                            onChange={(e) => { setSelectedSem(e.target.value); setSelectedCourse(''); setSelectedBatch(''); }}
                             required
                         >
                             <option value="">CHOOSE SEMESTER</option>
@@ -95,20 +108,35 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
 
                 <AnimatePresence mode="popLayout">
                     {selectedSem && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="flex flex-col">
-                            <label htmlFor="course-select" className={labelStyle}>Target Course</label>
-                            <div className="relative group">
-                                <select 
-                                    id="course-select"
-                                    className={selectBase}
-                                    value={selectedCourse}
-                                    onChange={(e) => setSelectedCourse(e.target.value)}
-                                    required
-                                >
-                                    <option value="">CHOOSE COURSE</option>
-                                    {courses.map(c => <option key={c._id} value={c._id}>{c.course_code} - {c.name.toUpperCase()}</option>)}
-                                </select>
-                                <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col">
+                                <label className={labelStyle}>Target Course</label>
+                                <div className="relative group">
+                                    <select
+                                        className={selectBase}
+                                        value={selectedCourse}
+                                        onChange={(e) => setSelectedCourse(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">SELECT COURSE</option>
+                                        {courses.map(c => <option key={c._id} value={c._id}>{c.course_code} - {c.short_name || 'CORE'}</option>)}
+                                    </select>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                                </div>
+                            </div>
+                            <div className="flex flex-col">
+                                <label className={labelStyle}>Batch (Optional)</label>
+                                <div className="relative group">
+                                    <select
+                                        className={selectBase}
+                                        value={selectedBatch}
+                                        onChange={(e) => setSelectedBatch(e.target.value)}
+                                    >
+                                        <option value="">ENTIRE SEMESTER</option>
+                                        {batches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
+                                    </select>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600 transition-colors" />
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -136,14 +164,19 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
                                 <Button
                                     className="h-14 rounded-2xl shadow-xl shadow-violet-500/20"
                                     isLoading={assignMutation.isPending}
-                                    onClick={() => assignMutation.mutate({ course_id: selectedCourse, teacher_id: teacher._id, is_primary: isPrimary })}
+                                    onClick={() => assignMutation.mutate({
+                                        course_id: selectedCourse,
+                                        teacher_id: teacher._id,
+                                        is_primary: isPrimary,
+                                        batch_id: selectedBatch || null
+                                    })}
                                 >
                                     Confirm Assignment
                                 </Button>
                             ) : (
                                 <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 text-center border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
                                     <BadgeCheck size={24} className="text-emerald-500 mx-auto mb-2" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Personnel already registered for this subject</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Personnel already registered for this slot</p>
                                 </div>
                             )}
 
@@ -151,7 +184,7 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
                                 <div className="mt-8 space-y-4">
                                     <div className="flex items-center gap-2 px-1">
                                         <Users size={16} className="text-zinc-400" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rostered Faculty ({assigned.length})</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Current Assignments ({assigned.length})</p>
                                     </div>
                                     <div className="space-y-2 max-h-48 overflow-y-auto hide-scrollbar pr-1">
                                         {assigned.map((a, idx) => (
@@ -160,10 +193,15 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.05 }}
-                                                className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/40 rounded-xl px-4 py-3 border border-zinc-100 dark:border-zinc-800 transition-all hover:border-violet-200"
+                                                className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-3 shadow-sm"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-xs font-bold dark:text-zinc-200 capitalize">{a.first_name} {a.last_name}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-bold dark:text-zinc-200 capitalize">{a.first_name} {a.last_name}</span>
+                                                        <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-1">
+                                                            {a.batch_name ? <><Hash size={8} /> {a.batch_name}</> : 'Full Semester'}
+                                                        </span>
+                                                    </div>
                                                     {a.is_primary && (
                                                         <div className="flex items-center gap-1 bg-violet-600 px-1.5 py-0.5 rounded-md shadow-sm">
                                                             <Star size={8} className="text-white fill-white" />
@@ -171,12 +209,11 @@ const AssignModal = ({ isOpen, onClose, teacher }) => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <Button 
+                                                <Button
                                                     variant="secondary"
                                                     icon={X}
                                                     onClick={() => removeMutation.mutate(a._id)}
-                                                    className="h-8 w-8 p-0 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 border-none shadow-none"
-                                                    isLoading={removeMutation.isPending && selectedCourse === a.course_id}
+                                                    className="h-8 w-8 p-0 rounded-lg text-zinc-400 hover:text-red-500 border-none shadow-none"
                                                 />
                                             </motion.div>
                                         ))}

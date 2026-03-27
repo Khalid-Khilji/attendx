@@ -59,7 +59,7 @@ const Select = ({
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 5 }}
-                            className="absolute left-0 right-0 top-full mt-2 z-[999] bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+                            className="absolute left-0 right-0 top-full mt-2 z-999 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
                         >
                             <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
                                 {childrenArray.map((child) =>

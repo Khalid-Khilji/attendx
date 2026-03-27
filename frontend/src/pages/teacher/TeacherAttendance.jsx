@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'motion/react'
 import { Camera, Layers, Calendar, SearchX } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyTimetable, getCourseSessions } from '../../api/index'
+import { getTeacherTimetable, getCourseSessions } from '../../api/index'
 import { AttendanceModal, Loader } from '../../components/index'
 
 const SlotCard = ({ slot }) => {
@@ -21,7 +21,7 @@ const SlotCard = ({ slot }) => {
   return (
     <>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 p-5 flex items-center gap-5 hover:shadow-xl hover:shadow-zinc-500/5 transition-all group">
+        className="bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 p-5 flex items-center gap-5 hover:shadow-xl hover:shadow-zinc-500/5 transition-all group">
         <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/50 flex flex-col items-center justify-center shrink-0">
           <span className="text-[10px] font-black text-violet-600 leading-none">{slot.start_time}</span>
           <div className="h-px w-4 bg-violet-200 dark:bg-violet-700 my-1" />
@@ -52,7 +52,7 @@ const TeacherAttendance = () => {
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long' })
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['my-timetable'],
-    queryFn: getMyTimetable,
+    queryFn: getTeacherTimetable,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   })
@@ -67,7 +67,7 @@ const TeacherAttendance = () => {
       <div className="max-w-4xl mx-auto space-y-10">
         <header className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
+            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
               <Layers size={32} />
             </div>
             <div>

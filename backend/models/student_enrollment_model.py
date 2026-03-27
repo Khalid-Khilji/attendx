@@ -7,20 +7,21 @@ def enrollment_entity(enrollment) -> dict:
         "student_id": enrollment["student_id"],
         "dept_id": enrollment["dept_id"],
         "sem_id": enrollment["sem_id"],
+        "batch_id": enrollment.get("batch_id"), 
         "academic_year_id": enrollment["academic_year_id"],
         "status": enrollment["status"],
         "promoted_at": enrollment.get("promoted_at"),
         "created_at": enrollment["created_at"]
     }
 
-def enrollment_create_model(student_id: str, dept_id: str, sem_id: str, academic_year_id: str) -> dict:
+def enrollment_create_model(student_id: str, dept_id: str, sem_id: str, academic_year_id: str, batch_id: str = None) -> dict:
     return {
         "_id": str(uuid.uuid4()),
         "student_id": student_id,
         "dept_id": dept_id,
         "sem_id": sem_id,
-        "academic_year_id": academic_year_id,
-        "status": "active",     
+        "batch_id": batch_id,
+        "status": "active",      
         "promoted_at": None,
         "created_at": datetime.utcnow()
     }

@@ -49,7 +49,7 @@ const AdminAttendance = () => {
 
         <header className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 px-8 py-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
+            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
               <Activity size={32} />
             </div>
             <div>
@@ -64,7 +64,7 @@ const AdminAttendance = () => {
           </div>
         </header>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="relative">
             <label htmlFor="dept_id" className="hidden">Faculty</label>
             <select id="dept_id" name="dept_id" value={selectedDept} autoComplete="off"

@@ -10,3 +10,4 @@ export * from './studentEnrollment';
 export * from './timetable';
 export * from './attendance';
 export * from './logs';
+export * from './batch';

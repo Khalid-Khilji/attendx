@@ -40,7 +40,7 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
             {step === 'create' && (
                 <div className="py-4">
                     <Button className="w-full h-14 rounded-2xl shadow-xl shadow-violet-500/20" icon={Play} isLoading={createMutation.isPending}
-                        onClick={() => createMutation.mutate({ timetable_id: slot._id, course_id: slot.course_id, sem_id: slot.sem_id, teacher_id: slot.teacher_id, date: new Date().toISOString().split('T')[0] })}>
+                        onClick={() => createMutation.mutate({ timetable_id: slot._id, teacher_id: slot.teacher_id, date: new Date().toISOString().split('T')[0] })}>
                         Initialize Session
                     </Button>
                 </div>
@@ -49,7 +49,7 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
             {step === 'upload' && (
                 <div className="space-y-6">
                     <label htmlFor="frame_upload" className="block cursor-pointer group">
-                        <div className={`rounded-[2rem] border-2 border-dashed transition-all p-10 text-center ${frames.length > 0 ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-violet-400'}`}>
+                        <div className={`rounded-4xl border-2 border-dashed transition-all p-10 text-center ${frames.length > 0 ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-violet-400'}`}>
                             <Camera size={40} className="mx-auto mb-4 text-zinc-300 group-hover:text-violet-500 transition-colors" />
                             <p className="text-xs font-black uppercase tracking-widest text-zinc-500">{frames.length > 0 ? `${frames.length} frames ready` : 'Capture Batch Frames'}</p>
                             <input id="frame_upload" name="frames" type="file" accept="image/*" multiple className="hidden" onChange={e => setFrames(Array.from(e.target.files))} />
@@ -57,7 +57,7 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
                     </label>
                     <div className="flex gap-3">
                         {!todaySession && <Button variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setStep('create')}>Back</Button>}
-                        <Button className="flex-[2] h-12 rounded-xl shadow-lg" icon={Upload} disabled={frames.length === 0} isLoading={markMutation.isPending} onClick={() => markMutation.mutate({ id: sessionId, files: frames })}>
+                        <Button className="flex-2 h-12 rounded-xl shadow-lg" icon={Upload} disabled={frames.length === 0} isLoading={markMutation.isPending} onClick={() => markMutation.mutate({ id: sessionId, files: frames })}>
                             Sync Attendance
                         </Button>
                     </div>

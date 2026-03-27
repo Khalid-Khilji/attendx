@@ -25,11 +25,11 @@ const TeacherProfile = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden relative"
         >
-          <div className="bg-gradient-to-br from-violet-600 to-indigo-600 h-32 relative" />
+          <div className="bg-linear-to-br from-violet-600 to-indigo-600 h-32 relative" />
           <div className="px-8 pb-8">
             <div className="-mt-12 mb-6 relative inline-block">
               {isLoading ? <Skeleton h="w-24 h-24" /> : (
-                <div className="w-24 h-24 rounded-[2rem] bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 shadow-2xl flex items-center justify-center text-4xl font-black text-violet-600">
+                <div className="w-24 h-24 rounded-4xl bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 shadow-2xl flex items-center justify-center text-4xl font-black text-violet-600">
                   {profile?.first_name?.[0]}
                 </div>
               )}

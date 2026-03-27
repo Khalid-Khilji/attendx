@@ -11,34 +11,40 @@ async def assign_teacher(current_user, data):
     if not teacher:
         return {"error": "Teacher not found"}
 
+    batch_id = data.get("batch_id")
+    if batch_id:
+        batch = await db.batches.find_one({"_id": batch_id})
+        if not batch:
+            return {"error": "Batch not found"}
+
     existing = await db.course_teachers.find_one({
         "course_id": data["course_id"],
-        "teacher_id": data["teacher_id"]
+        "teacher_id": data["teacher_id"],
+        "batch_id": batch_id
     })
     if existing:
-        return {"error": "Teacher already assigned to this course"}
+        return {"error": "Teacher already assigned to this course/batch"}
 
     if data.get("is_primary"):
         await db.course_teachers.update_many(
-            {"course_id": data["course_id"]},
+            {"course_id": data["course_id"], "batch_id": batch_id},
             {"$set": {"is_primary": False}}
         )
 
     ct_data = course_teacher_create_model(
         data["course_id"],
         data["teacher_id"],
+        batch_id,
         data.get("is_primary", False)
     )
     await db.course_teachers.insert_one(ct_data)
     
-    await log_action(
-        current_user, 
-        "CREATE", 
-        "COURSE_TEACHER", 
-        ct_data["_id"], 
-        f"{teacher['first_name']} {teacher['last_name']} -> {course['name'].upper()}"
-    )
-    
+    log_msg = f"{teacher['first_name']} -> {course['name'].upper()}"
+    if batch_id:
+        batch = await db.batches.find_one({"_id": batch_id})
+        log_msg += f" (Batch {batch['name']})"
+
+    await log_action(current_user, "CREATE", "COURSE_TEACHER", ct_data["_id"], log_msg)
     return course_teacher_entity(ct_data)
 
 async def update_teacher_assignment(current_user, ct_id: str, data):
@@ -46,26 +52,13 @@ async def update_teacher_assignment(current_user, ct_id: str, data):
     if not ct:
         return {"error": "Assignment not found"}
 
-    course = await db.courses.find_one({"_id": ct["course_id"]})
-    teacher = await db.teacher_details.find_one({"_id": ct["teacher_id"]})
-
     if data.get("is_primary"):
         await db.course_teachers.update_many(
-            {"course_id": ct["course_id"], "_id": {"$ne": ct_id}},
+            {"course_id": ct["course_id"], "batch_id": ct.get("batch_id"), "_id": {"$ne": ct_id}},
             {"$set": {"is_primary": False}}
         )
 
     await db.course_teachers.update_one({"_id": ct_id}, {"$set": data})
-    
-    await log_action(
-        current_user, 
-        "UPDATE", 
-        "COURSE_TEACHER", 
-        ct_id, 
-        f"{teacher['first_name']} {teacher['last_name']} in {course['name'].upper()}",
-        {"changes": data}
-    )
-
     updated = await db.course_teachers.find_one({"_id": ct_id})
     return course_teacher_entity(updated)
 
@@ -73,44 +66,21 @@ async def remove_teacher(current_user, ct_id: str):
     ct = await db.course_teachers.find_one({"_id": ct_id})
     if not ct:
         return {"error": "Assignment not found"}
-
-    course = await db.courses.find_one({"_id": ct["course_id"]})
-    teacher = await db.teacher_details.find_one({"_id": ct["teacher_id"]})
-
     await db.course_teachers.delete_one({"_id": ct_id})
-    
-    await log_action(
-        current_user, 
-        "DELETE", 
-        "COURSE_TEACHER", 
-        ct_id, 
-        f"{teacher['first_name']} {teacher['last_name']} from {course['name'].upper() if course else 'Unknown Course'}"
-    )
-    
-    return {"message": "Teacher removed from course"}
+    return {"message": "Teacher removed"}
 
 async def get_course_teachers(course_id: str):
     pipeline = [
         {"$match": {"course_id": course_id}},
-        {
-            "$lookup": {
-                "from": "teacher_details",
-                "localField": "teacher_id",
-                "foreignField": "_id",
-                "as": "teacher"
-            }
-        },
+        {"$lookup": {"from": "teacher_details", "localField": "teacher_id", "foreignField": "_id", "as": "teacher"}},
         {"$unwind": "$teacher"},
+        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
         {
             "$project": {
-                "_id": 1,
-                "course_id": 1,
-                "teacher_id": 1,
-                "is_primary": 1,
-                "assigned_at": 1,
-                "first_name": "$teacher.first_name",
-                "last_name": "$teacher.last_name",
-                "faculty_id": "$teacher.faculty_id"
+                "_id": 1, "course_id": 1, "teacher_id": 1, "batch_id": 1, "is_primary": 1, "assigned_at": 1,
+                "first_name": "$teacher.first_name", "last_name": "$teacher.last_name", "faculty_id": "$teacher.faculty_id",
+                "batch_name": "$batch.name"
             }
         }
     ]

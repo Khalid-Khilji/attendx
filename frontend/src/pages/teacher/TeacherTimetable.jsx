@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Calendar, LayoutGrid } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyTimetable } from '../../api/index'
+import { getTeacherTimetable } from '../../api/index'
 import { TimetableDayGroup } from '../../components/index'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -9,7 +9,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const TeacherTimetable = () => {
   const { data: slots = [], isLoading } = useQuery({
     queryKey: ['my-timetable'],
-    queryFn: getMyTimetable,
+    queryFn: getTeacherTimetable,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -30,7 +30,7 @@ const TeacherTimetable = () => {
 
         <header className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
+            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
               <LayoutGrid size={32} />
             </div>
             <div>

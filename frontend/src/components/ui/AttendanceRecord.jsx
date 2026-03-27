@@ -46,7 +46,7 @@ const AttendanceRecords = ({ isOpen, sessionId, onClose }) => {
                 ))}
             </div>
 
-            <div className="overflow-y-auto max-h-[400px] min-h-[300px] pr-2 custom-scrollbar">
+            <div className="overflow-y-auto max-h-100 min-h-75 pr-2 custom-scrollbar">
                 {isLoading ? <div className="py-20 flex justify-center"><Loader text="Indexing..." /></div> :
                     records.length === 0 ? (
                         <div className="py-20 text-center opacity-30">

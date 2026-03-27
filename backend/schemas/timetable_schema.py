@@ -6,6 +6,7 @@ class TimetableCreate(BaseModel):
     sem_id: str
     course_id: str
     teacher_id: str
+    batch_id: Optional[str] = None
     academic_year_id: str
     day_of_week: str
     start_time: str
@@ -16,12 +17,14 @@ class TimetableCreate(BaseModel):
 class TimetableUpdate(BaseModel):
     is_active: bool | None = None
     valid_until: date | None = None
+    batch_id: str | None = None
 
 class TimetableResponse(BaseModel):
     id: str
     sem_id: str
     course_id: str
     teacher_id: str
+    batch_id: Optional[str]
     academic_year_id: str
     day_of_week: str
     start_time: str
@@ -33,4 +36,4 @@ class TimetableResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        populate_by_name = True
+        from_attributes = True

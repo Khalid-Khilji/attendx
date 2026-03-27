@@ -31,16 +31,16 @@ const StudentProfile = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden relative"
         >
-          <div className="bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-500 h-32 relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
+          <div className="bg-linear-to-br from-indigo-600 via-violet-600 to-blue-500 h-32 relative">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
           </div>
 
           <div className="px-8 pb-8">
             <div className="-mt-12 mb-6 relative inline-block">
               {profile?.profile_pic ? (
-                <img src={profile.profile_pic} alt="Profile" className="w-24 h-24 rounded-[2rem] object-cover border-4 border-white dark:border-zinc-900 shadow-2xl" />
+                <img src={profile.profile_pic} alt="Profile" className="w-24 h-24 rounded-4xl object-cover border-4 border-white dark:border-zinc-900 shadow-2xl" />
               ) : (
-                <div className="w-24 h-24 rounded-[2rem] bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 shadow-2xl flex items-center justify-center">
+                <div className="w-24 h-24 rounded-4xl bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 shadow-2xl flex items-center justify-center">
                   <span className="text-4xl font-black text-violet-600 uppercase">
                     {profile?.first_name?.[0]}
                   </span>
@@ -57,7 +57,7 @@ const StudentProfile = () => {
                   {profile?.first_name} {profile?.last_name}
                 </h2>
                 <div className="flex items-center gap-3 mt-3">
-                  <span className="text-[10px] font-black uppercase tracking-[0.1em] text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
                     {profile?.roll_no}
                   </span>
                   <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${faceRegistered ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/5 text-rose-600 border-rose-500/20'}`}>

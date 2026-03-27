@@ -24,6 +24,7 @@ import AssignModal from "./forms/AssignModal";
 import AcademicYearModal from "./forms/AcademicYearModal";
 import RecordsModal from "./forms/RecordModal";
 import AttendanceModal from "./forms/AttendanceModal";
+import BatchModal from "./forms/BatchModal";
 
 import RoleGuard from "./guards/RoleGuard";
 
@@ -42,7 +43,7 @@ export {
     Header, Footer, ScrollToTop,
     Button, Input, Modal, Loader, Select, SelectOption,
     Login, Logout,
-    DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal, RecordsModal, AttendanceModal,
+    DepartmentModal, SemesterModal, CourseModal, TimetableSlotModal, StudentModal, EnrollModal, FaceModal, TeacherModal, AssignModal, AcademicYearModal, RecordsModal, AttendanceModal, BatchModal,
     RoleGuard,
     CourseCard, StudentRow, InfoRow, StatCard, TimetableSlot, TimetableDayGroup, SessionCard, AttendanceRecords, AttendanceRow, ProfileSkeleton
 };

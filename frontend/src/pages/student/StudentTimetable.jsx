@@ -34,7 +34,7 @@ const StudentTimetable = () => {
           className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm"
         >
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
+            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
               <LayoutGrid size={32} />
             </div>
             <div>
@@ -61,7 +61,7 @@ const StudentTimetable = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="py-40 text-center"
           >
-            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-900 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-zinc-200 dark:border-zinc-800">
+            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-900 rounded-4xl flex items-center justify-center mx-auto mb-6 border border-zinc-200 dark:border-zinc-800">
               <SearchX size={48} strokeWidth={1.5} className="text-zinc-300 dark:text-zinc-700" />
             </div>
             <p className="text-sm font-black uppercase tracking-[0.4em] text-zinc-400">Sequence Not Found</p>

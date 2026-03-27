@@ -58,7 +58,7 @@ const AdminLog = () => {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <header className="mb-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
+        <header className="mb-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30 shrink-0">
               <Activity size={28} className="md:w-8 md:h-8" />
@@ -152,7 +152,7 @@ const AdminLog = () => {
           )}
         </AnimatePresence>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden relative">
+        <div className="bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-2xl overflow-hidden relative">
           {isFetching && !isLoading && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-violet-500/10 overflow-hidden z-20">
               <motion.div
@@ -165,7 +165,7 @@ const AdminLog = () => {
           )}
 
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full border-collapse min-w-[800px]">
+            <table className="w-full border-collapse min-w-200">
               <thead>
                 <tr className="bg-zinc-50/50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 text-zinc-400">
                   <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Timestamp</th>
@@ -215,7 +215,7 @@ const AdminLog = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3 min-w-[200px]">
+                        <div className="flex items-center gap-3 min-w-50">
                           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-violet-600 transition-colors shrink-0">
                             <Box size={16} />
                           </div>

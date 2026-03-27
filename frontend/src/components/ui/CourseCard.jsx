@@ -30,7 +30,7 @@ const CourseCard = ({ course }) => {
 
   return (
     <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className={`bg-white dark:bg-zinc-900 rounded-[2rem] border transition-all duration-300 ${expanded ? 'border-violet-600/30 shadow-2xl shadow-violet-500/5' : 'border-zinc-100 dark:border-zinc-800 shadow-sm hover:border-violet-200'}`}>
+      className={`bg-white dark:bg-zinc-900 rounded-4xl border transition-all duration-300 ${expanded ? 'border-violet-600/30 shadow-2xl shadow-violet-500/5' : 'border-zinc-100 dark:border-zinc-800 shadow-sm hover:border-violet-200'}`}>
 
       <button onClick={() => setExpanded(!expanded)}
         className="w-full px-6 py-5 flex items-center gap-5 text-left">
@@ -50,7 +50,7 @@ const CourseCard = ({ course }) => {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-violet-600 uppercase tracking-[0.1em] bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-black text-violet-600 uppercase tracking-widest bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded-md">
               {course.course_code}
             </span>
             <span className="text-[10px] font-bold text-zinc-400 uppercase">SEM {course.sem_number}</span>
@@ -89,7 +89,7 @@ const CourseCard = ({ course }) => {
                 </div>
               </div>
 
-              <div className="max-h-[350px] overflow-y-auto hide-scrollbar rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-inner">
+              <div className="max-h-87.5 overflow-y-auto hide-scrollbar rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-inner">
                 {isLoading ? (
                   <div className="p-4 space-y-3">
                     {[1, 2, 3].map(i => <div key={i} className="animate-pulse h-12 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl" />)}

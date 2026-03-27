@@ -49,7 +49,7 @@ const RecordsModal = ({ isOpen, session, onClose }) => {
                 ))}
             </div>
 
-            <div className="overflow-y-auto max-h-[450px] pr-2 custom-scrollbar min-h-[300px]">
+            <div className="overflow-y-auto max-h-112.5 pr-2 custom-scrollbar min-h-75">
                 {isLoading ? (
                     <div className="flex justify-center py-20"><Loader text="Indexing Records..." /></div>
                 ) : records.length === 0 ? (

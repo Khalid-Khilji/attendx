@@ -4,35 +4,54 @@ from models.attendance_record_model import record_create_model
 from utils.imagekit import upload_image
 from utils.face import process_frames
 from utils.logger import log_action
+from datetime import datetime, time, date
 
 async def create_session(current_user, data):
     slot = await db.timetable.find_one({"_id": data["timetable_id"], "is_active": True})
+    
     if not slot:
         return {"error": "Timetable slot not found"}
 
-    course = await db.courses.find_one({"_id": data["course_id"]})
+    course_id = slot.get("course_id")
+    sem_id = slot.get("sem_id")
+    teacher_id = slot.get("teacher_id")
+
+    course = await db.courses.find_one({"_id": course_id})
     course_name = course["name"] if course else "Unknown Course"
+
+    session_date = data["date"]
+    if isinstance(session_date, date) and not isinstance(session_date, datetime):
+        query_date = datetime.combine(session_date, time.min)
+    else:
+        query_date = session_date
 
     existing = await db.attendance_sessions.find_one({
         "timetable_id": data["timetable_id"],
-        "date": data["date"]
+        "date": query_date 
     })
+    
     if existing:
         return {"error": "Session already exists for this slot today"}
 
     session_data = session_create_model(
-        data["timetable_id"], data["course_id"],
-        data["sem_id"], data["teacher_id"],
-        data["date"], data.get("group_photo")
+        data["timetable_id"], 
+        course_id, 
+        sem_id, 
+        teacher_id, 
+        query_date,
+        data.get("group_photo")
     )
+    
     await db.attendance_sessions.insert_one(session_data)
+    
+    display_date = session_date.strftime("%Y-%m-%d") if isinstance(session_date, date) else str(session_date)
     
     await log_action(
         current_user, 
         "CREATE", 
         "ATTENDANCE_SESSION", 
         session_data["_id"], 
-        f"{course_name} ({data['date']})"
+        f"{course_name} ({display_date})"
     )
     
     return session_entity(session_data)

@@ -1,110 +1,59 @@
 from db.database import db
 from models.student_enrollment_model import enrollment_create_model, enrollment_entity, enrollment_promote_update
 from utils.logger import log_action
+from datetime import datetime
 
 async def enroll_student(current_user, data):
-    student = await db.student_details.find_one({"_id": data["student_id"]})
-    if not student:
-        return {"error": "Student not found"}
-
-    sem = await db.semesters.find_one({"_id": data["sem_id"]})
-    if not sem:
-        return {"error": "Semester not found"}
-
-    existing = await db.student_enrollments.find_one({
-        "student_id": data["student_id"],
-        "status": "active"
-    })
-    if existing:
-        return {"error": "Student already has an active enrollment"}
+    batch_id = data.get("batch_id")
+    if batch_id:
+        batch = await db.batches.find_one({"_id": batch_id})
+        if not batch: return {"error": "Batch not found"}
 
     enrollment_data = enrollment_create_model(
-        data["student_id"],
-        data["dept_id"],
-        data["sem_id"],
-        data["academic_year_id"]
+        data["student_id"], data["dept_id"], data["sem_id"], data["academic_year_id"], batch_id
     )
     await db.student_enrollments.insert_one(enrollment_data)
-    
-    await log_action(
-        current_user, 
-        "CREATE", 
-        "ENROLLMENT", 
-        enrollment_data["_id"], 
-        f"{student['first_name']} {student['last_name']} ({student['roll_no']}) -> Sem {sem['sem_number']}"
-    )
-    
     return enrollment_entity(enrollment_data)
 
 async def promote_student(current_user, student_id: str, data):
-    student = await db.student_details.find_one({"_id": student_id})
-    if not student:
-        return {"error": "Student not found"}
-
-    current_enrollment = await db.student_enrollments.find_one({
-        "student_id": student_id,
-        "status": "active"
-    })
-    if not current_enrollment:
-        return {"error": "No active enrollment found"}
-
-    next_sem = await db.semesters.find_one({"_id": data["next_sem_id"]})
-    if not next_sem:
-        return {"error": "Next semester not found"}
+    current = await db.student_enrollments.find_one({"student_id": student_id, "status": "active"})
+    if not current: return {"error": "No active enrollment"}
 
     await db.student_enrollments.update_one(
-        {"_id": current_enrollment["_id"]},
-        {"$set": {"status": "promoted", "promoted_at": __import__('datetime').datetime.utcnow()}}
+        {"_id": current["_id"]},
+        {"$set": {"status": "promoted", "promoted_at": datetime.utcnow()}}
     )
 
     new_enrollment = enrollment_promote_update(data["next_sem_id"], data["next_academic_year_id"])
     new_enrollment["student_id"] = student_id
-    new_enrollment["dept_id"] = current_enrollment["dept_id"]
+    new_enrollment["dept_id"] = current["dept_id"]
+    new_enrollment["batch_id"] = data.get("next_batch_id")
+    
     await db.student_enrollments.insert_one(new_enrollment)
-
-    await log_action(
-        current_user, 
-        "PROMOTE", 
-        "ENROLLMENT", 
-        student_id, 
-        f"{student['first_name']} {student['last_name']} to Sem {next_sem['sem_number']}",
-        {
-            "from_sem": current_enrollment["sem_id"],
-            "to_sem": data["next_sem_id"]
-        }
-    )
-
     return enrollment_entity(new_enrollment)
+
+async def get_sem_students(sem_id: str, batch_id: str = None):
+    match_query = {"sem_id": sem_id, "status": "active"}
+    if batch_id:
+        match_query["batch_id"] = batch_id
+
+    pipeline = [
+        {"$match": match_query},
+        {"$lookup": {"from": "student_details", "localField": "student_id", "foreignField": "_id", "as": "student"}},
+        {"$unwind": "$student"},
+        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
+        {
+            "$project": {
+                "_id": "$student._id", "first_name": "$student.first_name", "last_name": "$student.last_name",
+                "roll_no": "$student.roll_no", "batch_name": "$batch.name"
+            }
+        }
+    ]
+    return await db.student_enrollments.aggregate(pipeline).to_list(None)
 
 async def get_student_enrollment_history(student_id: str):
     enrollments = await db.student_enrollments.find(
         {"student_id": student_id}
     ).sort("created_at", 1).to_list(None)
     return [enrollment_entity(e) for e in enrollments]
-
-async def get_sem_students(sem_id: str):
-    pipeline = [
-        {"$match": {"sem_id": sem_id, "status": "active"}},
-        {
-            "$lookup": {
-                "from": "student_details",
-                "localField": "student_id",
-                "foreignField": "_id",
-                "as": "student"
-            }
-        },
-        {"$unwind": "$student"},
-        {
-            "$project": {
-                "_id": "$student._id",
-                "first_name": "$student.first_name",
-                "last_name": "$student.last_name",
-                "roll_no": "$student.roll_no",
-                "profile_pic": "$student.profile_pic",
-                "enrollment_id": "$_id",
-                "academic_year_id": 1,
-                "status": 1
-            }
-        }
-    ]
-    return await db.student_enrollments.aggregate(pipeline).to_list(None)

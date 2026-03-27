@@ -105,12 +105,12 @@ const AdminDashboard = () => {
                         </div>
                     </motion.div>
 
-                    <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-white dark:bg-zinc-900 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-6 py-5 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3">
                             <History size={16} className="text-violet-600" />
                             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Live Audit Log</h2>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-[420px] hide-scrollbar">
+                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-105 hide-scrollbar">
                             {isLoading ? [...Array(4)].map((_, i) => (
                                 <div key={i} className="animate-pulse flex gap-3 p-4 h-20 bg-zinc-50/50" />
                             )) : logs.map((log, i) => (
@@ -144,7 +144,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-4">
                         <div className="flex-1 h-4 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                             <motion.div initial={{ width: 0 }} animate={{ width: `${facePercent}%` }} transition={{ delay: 0.7, duration: 0.8 }}
-                                className="h-full bg-gradient-to-r from-violet-500 to-emerald-500 rounded-full" />
+                                className="h-full bg-linear-to-r from-violet-500 to-emerald-500 rounded-full" />
                         </div>
                         <div className="flex items-center gap-4 shrink-0">
                             <div className="text-center">

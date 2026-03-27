@@ -36,7 +36,7 @@ const StudentAttendance = () => {
           className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 px-8 py-6 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6"
         >
           <div className="flex items-center gap-5 w-full">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30 shrink-0">
+            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30 shrink-0">
               <Activity size={32} />
             </div>
             <div>
@@ -86,7 +86,7 @@ const StudentAttendance = () => {
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 1.5, ease: "circOut" }}
-                  className={`h-full rounded-full bg-gradient-to-r ${percentage >= 75 ? 'from-emerald-500 to-teal-400' : 'from-rose-500 to-orange-400'}`}
+                  className={`h-full rounded-full bg-linear-to-r ${percentage >= 75 ? 'from-emerald-500 to-teal-400' : 'from-rose-500 to-orange-400'}`}
                 />
               </div>
 
@@ -135,7 +135,7 @@ const StudentAttendance = () => {
                   <p className="text-[12px] font-black uppercase tracking-[0.4em]">Sequence Empty</p>
                 </div>
               ) : (
-                <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-[500px] hide-scrollbar">
+                <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50 overflow-y-auto max-h-125 hide-scrollbar">
                   {records.map((record, index) => (
                     <AttendanceRow key={record._id} record={record} index={index} />
                   ))}
