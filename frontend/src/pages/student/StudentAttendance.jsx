@@ -2,16 +2,25 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { ChevronDown, Activity, CalendarDays, SearchX } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyAttendance, getAllCourses } from '../../api/index'
+import { getMyAttendance, getAllCourses, getMyProfile } from '../../api/index' // getProfile add kiya
 import { Loader, AttendanceRow } from '../../components/index'
 
 const StudentAttendance = () => {
   const [selectedCourse, setSelectedCourse] = useState('')
 
+  const { data: profile } = useQuery({
+    queryKey: ['student-profile'],
+    queryFn: getMyProfile,
+    staleTime: Infinity
+  })
+
+  const semId = profile?.sem_id;
+
   const { data: courses = [] } = useQuery({
-    queryKey: ['my-courses-student'],
-    queryFn: getAllCourses,
-    staleTime: 1000 * 60 * 30
+    queryKey: ['my-courses-student', semId],
+    queryFn: () => getAllCourses(semId),
+    enabled: !!semId, 
+    staleTime: Infinity
   })
 
   const { data: attendance, isLoading } = useQuery({
@@ -28,7 +37,7 @@ const StudentAttendance = () => {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-3xl mx-auto space-y-8 px-4">
 
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -52,7 +61,6 @@ const StudentAttendance = () => {
         </motion.header>
 
         <div className="relative group">
-          <label htmlFor="course_filter" className="hidden">Filter by Course</label>
           <select
             id="course_filter"
             name="course_filter"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from '@tanstack/react-form';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,20 +18,30 @@ const EnrollModal = ({ isOpen, onClose, student }) => {
         queryKey: ['semesters', selectedDept],
         queryFn: () => getAllSemesters(selectedDept),
         enabled: !!selectedDept,
-        staleTime: Infinity
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
     });
 
     const { data: batches = [] } = useQuery({
         queryKey: ['batches', selectedSem],
         queryFn: () => getSemBatches(selectedSem),
         enabled: !!selectedSem,
-        staleTime: Infinity
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
     });
 
     const { data: history = [] } = useQuery({
         queryKey: ['enrollment-history', student?._id],
         queryFn: () => getEnrollmentHistory(student?._id),
         enabled: !!student?._id && isOpen,
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
     });
 
     const activeEnrollment = history.find(h => h.status === 'active');
@@ -58,14 +68,25 @@ const EnrollModal = ({ isOpen, onClose, student }) => {
     const enrollForm = useForm({
         defaultValues: { sem_id: '', academic_year_id: '', batch_id: '' },
         onSubmit: async ({ value }) => {
-            enrollMutation.mutate({ student_id: student._id, dept_id: selectedDept, ...value });
+            enrollMutation.mutate({
+                student_id: student._id,
+                dept_id: selectedDept,
+                ...value,
+                batch_id: value.batch_id || null
+            });
         }
     });
 
     const promoteForm = useForm({
         defaultValues: { next_sem_id: '', next_academic_year_id: '', next_batch_id: '' },
         onSubmit: async ({ value }) => {
-            promoteMutation.mutate({ id: student._id, data: value });
+            promoteMutation.mutate({
+                id: student._id,
+                data: {
+                    ...value,
+                    next_batch_id: value.next_batch_id || null
+                }
+            });
         }
     });
 
@@ -167,10 +188,23 @@ const EnrollModal = ({ isOpen, onClose, student }) => {
                             <label className={labelClass}>Semester Index</label>
                             <div className="relative group">
                                 <enrollForm.Field name="sem_id">
-                                    {(f) => <select value={f.state.value} onChange={(e) => { f.handleChange(e.target.value); setSelectedSem(e.target.value); }} className={selectBaseClass} required disabled={!selectedDept}>
-                                        <option value="" disabled>CHOOSE SEMESTER</option>
-                                        {semesters.map(s => <option key={s._id} value={s._id}>SEMESTER {s.sem_number}</option>)}
-                                    </select>}
+                                    {(f) => (
+                                        <select
+                                            value={f.state.value}
+                                            onChange={(e) => {
+                                                f.handleChange(e.target.value);
+                                                setSelectedSem(e.target.value);
+                                            }}
+                                            className={selectBaseClass}
+                                            required
+                                            disabled={!selectedDept}
+                                        >
+                                            <option value="" disabled>CHOOSE SEMESTER</option>
+                                            {semesters.map(s => (
+                                                <option key={s._id} value={s._id}>SEMESTER {s.sem_number}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </enrollForm.Field>
                                 <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600" />
                             </div>
@@ -179,10 +213,19 @@ const EnrollModal = ({ isOpen, onClose, student }) => {
                             <label className={labelClass}>Batch Assignment</label>
                             <div className="relative group">
                                 <enrollForm.Field name="batch_id">
-                                    {(f) => <select value={f.state.value} onChange={(e) => f.handleChange(e.target.value)} className={selectBaseClass} disabled={!selectedSem}>
-                                        <option value="">NO BATCH (THEORY ONLY)</option>
-                                        {batches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
-                                    </select>}
+                                    {(f) => (
+                                        <select
+                                            value={f.state.value}
+                                            onChange={(e) => f.handleChange(e.target.value)}
+                                            className={selectBaseClass}
+                                            disabled={!selectedSem}
+                                        >
+                                            <option value="">NO BATCH</option>
+                                            {batches.map(b => (
+                                                <option key={b._id} value={b._id}>{b.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </enrollForm.Field>
                                 <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none group-hover:text-violet-600" />
                             </div>

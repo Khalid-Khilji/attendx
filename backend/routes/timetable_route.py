@@ -47,8 +47,8 @@ async def my_timetable(
 ):
     return await get_my_timetable(current_user)
 
-@router.get("/student")
-async def student_timetable(
-    current_user=Depends(role_required(["student"]))
-):
-    return await get_student_timetable(current_user)
+# @router.get("/student")
+# async def student_timetable(
+#     current_user=Depends(role_required(["student"]))
+# ):
+#     return await get_student_timetable(current_user)

@@ -5,9 +5,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Button, Input, Modal } from '../index'
 import { createDepartment, updateDepartment } from '../../api/index'
+import useAdminStore from '../../stores/admin'
 
 const DepartmentModal = ({ isOpen, onClose, editData = null }) => {
     const queryClient = useQueryClient()
+    const updateLocalData = useAdminStore((state) => state.updateLocalData);
 
     const mutation = useMutation({
         mutationFn: (values) => {
@@ -17,8 +19,15 @@ const DepartmentModal = ({ isOpen, onClose, editData = null }) => {
             }
             return editData ? updateDepartment(editData._id, payload) : createDepartment(payload)
         },
-        onSuccess: () => {
+        onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['departments'] })
+            
+            if (editData) {
+                updateLocalData('dept', 'edit', res);
+            } else {
+                updateLocalData('dept', 'add', res);
+            }
+
             onClose()
         }
     })
@@ -72,7 +81,7 @@ const DepartmentModal = ({ isOpen, onClose, editData = null }) => {
                                     icon={Building2}
                                     autoComplete="organization"
                                     value={field.state.value}
-                                    onChange={field.handleChange}
+                                    onChange={(val) => field.handleChange(val)}
                                     placeholder="e.g. Computer Science"
                                     required
                                 />
@@ -89,7 +98,7 @@ const DepartmentModal = ({ isOpen, onClose, editData = null }) => {
                                     icon={Hash}
                                     autoComplete="off"
                                     value={field.state.value}
-                                    onChange={field.handleChange}
+                                    onChange={(val) => field.handleChange(val)}
                                     required
                                     placeholder="e.g. CS"
                                 />

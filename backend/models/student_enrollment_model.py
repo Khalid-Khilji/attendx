@@ -8,7 +8,7 @@ def enrollment_entity(enrollment) -> dict:
         "dept_id": enrollment["dept_id"],
         "sem_id": enrollment["sem_id"],
         "batch_id": enrollment.get("batch_id"), 
-        "academic_year_id": enrollment["academic_year_id"],
+        "academic_year_id": enrollment.get("academic_year_id", ""), 
         "status": enrollment["status"],
         "promoted_at": enrollment.get("promoted_at"),
         "created_at": enrollment["created_at"]
@@ -21,16 +21,18 @@ def enrollment_create_model(student_id: str, dept_id: str, sem_id: str, academic
         "dept_id": dept_id,
         "sem_id": sem_id,
         "batch_id": batch_id,
+        "academic_year_id": academic_year_id,
         "status": "active",      
         "promoted_at": None,
         "created_at": datetime.utcnow()
     }
 
-def enrollment_promote_update(next_sem_id: str, next_academic_year_id: str) -> dict:
+def enrollment_promote_update(next_sem_id: str, next_academic_year_id: str, next_batch_id: str = None) -> dict:
     return {
         "_id": str(uuid.uuid4()),
         "sem_id": next_sem_id,
-        "academic_year_id": next_academic_year_id,
+        "academic_year_id": next_academic_year_id, 
+        "batch_id": next_batch_id,
         "status": "active",
         "promoted_at": None,
         "created_at": datetime.utcnow()

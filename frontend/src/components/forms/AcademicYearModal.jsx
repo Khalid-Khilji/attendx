@@ -4,14 +4,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from '@tanstack/react-form';
 import { createAcademicYear, updateAcademicYear } from '../../api/index';
 import { Modal, Input, Button } from '../../components/index';
+import useAdminStore from '../../stores/admin';
 
 const AcademicYearModal = ({ isOpen, onClose, editData = null }) => {
     const queryClient = useQueryClient();
+    const updateLocalData = useAdminStore((state) => state.updateLocalData);
 
     const mutation = useMutation({
         mutationFn: (data) => editData ? updateAcademicYear(editData._id, data) : createAcademicYear(data),
-        onSuccess: () => {
+        onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['academic-years'] });
+
+            if (editData) {
+                updateLocalData('ay', 'edit', res);
+            } else {
+                updateLocalData('ay', 'add', res);
+            }
+
             onClose();
         }
     });
@@ -45,10 +54,7 @@ const AcademicYearModal = ({ isOpen, onClose, editData = null }) => {
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
                 <h2 className="text-xl font-black uppercase tracking-tight mb-6 dark:text-white">
                     {editData ? 'Modify' : 'New'} Academic Year
                 </h2>
@@ -68,7 +74,7 @@ const AcademicYearModal = ({ isOpen, onClose, editData = null }) => {
                                 name={field.name}
                                 placeholder="e.g. 2024-25"
                                 value={field.state.value}
-                                onChange={field.handleChange}
+                                onChange={(val) => field.handleChange(val)}
                                 autoComplete="off"
                                 required
                             />
@@ -84,7 +90,7 @@ const AcademicYearModal = ({ isOpen, onClose, editData = null }) => {
                                     name={field.name}
                                     type="date"
                                     value={field.state.value}
-                                    onChange={field.handleChange}
+                                    onChange={(val) => field.handleChange(val)}
                                     required
                                 />
                             )}
@@ -97,7 +103,7 @@ const AcademicYearModal = ({ isOpen, onClose, editData = null }) => {
                                     name={field.name}
                                     type="date"
                                     value={field.state.value}
-                                    onChange={field.handleChange}
+                                    onChange={(val) => field.handleChange(val)}
                                     required
                                 />
                             )}

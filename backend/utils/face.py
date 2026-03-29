@@ -32,7 +32,7 @@ def _is_live_face(face_crop):
     if face_crop.shape[0] < 40 or face_crop.shape[1] < 40:
         return False
     gray = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
-    return _compute_lbp_entropy(gray) > 4.5 and _compute_laplacian_variance(gray) > 80
+    return _compute_lbp_entropy(gray) > 3.5 and _compute_laplacian_variance(gray) > 30
 
 def _batch_cosine_sim(detected, stored):
     d_norm = detected / (np.linalg.norm(detected, axis=1, keepdims=True) + 1e-8)
@@ -67,7 +67,7 @@ def _process_frames_sync(frames_bytes, stored_embeddings):
 
     scored = [(f, cv2.Laplacian(cv2.cvtColor(f, cv2.COLOR_BGR2GRAY), cv2.CV_64F).var()) for f in frames]
     scored.sort(key=lambda x: x[1], reverse=True)
-    best_frames = [f for f, _ in scored[:15]]
+    best_frames = [f for f, _ in scored[:10]]
 
     app = _get_face_app()
     stored_matrix = np.array([s["embedding"] for s in stored_embeddings])
@@ -102,8 +102,8 @@ def _process_frames_sync(frames_bytes, stored_embeddings):
                 if sim > best_scores[sid]:
                     best_scores[sid] = float(sim)
 
-    THRESHOLD_PRESENT = 0.55
-    THRESHOLD_REVIEW = 0.42
+    THRESHOLD_PRESENT = 0.45
+    THRESHOLD_REVIEW = 0.35
 
     results = []
     for s in stored_embeddings:

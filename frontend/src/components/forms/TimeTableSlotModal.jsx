@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Clock, AlertTriangle, Hash } from 'lucide-react';
+import { Plus, Trash2, Clock } from 'lucide-react';
 import { Modal, Button } from '../index';
 import { createSlot, getAllCourses, getAllSemesters, getCourseTeachers, getSemBatches } from '../../api/index';
 import useAdminStore from '../../stores/admin';
@@ -68,7 +68,7 @@ const TimetableSlotModal = ({ isOpen, onClose }) => {
                     return {
                         ...s,
                         assignedTeachers: teachers,
-                        teacher_id: teachers.length === 1 ? teachers[0]._id : '',
+                        teacher_id: teachers.length === 1 ? teachers[0].teacher_id : '',
                         fetchError: false
                     };
                 }
@@ -172,7 +172,11 @@ const TimetableSlotModal = ({ isOpen, onClose }) => {
                                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400 block mb-1.5 ml-1">Instructor</label>
                                             <select className={selectClass} value={slot.teacher_id} onChange={(e) => handleSlotChange(slot.id, 'teacher_id', e.target.value)} required disabled={slot.assignedTeachers.length <= 1}>
                                                 <option value="">{slot.course_id ? 'Select Faculty' : 'Choose Course'}</option>
-                                                {slot.assignedTeachers.map(t => <option key={t._id} value={t._id}>{t.first_name} {t.last_name}</option>)}
+                                                {slot.assignedTeachers.map(t => (
+                                                    <option key={t.teacher_id} value={t.teacher_id}>
+                                                        {t.first_name} {t.last_name}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div className="lg:col-span-3 grid grid-cols-2 gap-2">

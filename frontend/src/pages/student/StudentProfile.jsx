@@ -1,15 +1,18 @@
 import { motion } from 'motion/react'
-import { User, Mail, Hash, Building2, CameraOff, ShieldCheck, Clock, BadgeCheck } from 'lucide-react'
+import { User, Mail, Hash, Building2, CameraOff, ShieldCheck, Clock, BadgeCheck, Layers, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getMyProfile } from '../../api/index'
 import { InfoRow } from '../../components/index'
-import {ProfileSkeleton} from '../../components/index'
+import { ProfileSkeleton } from '../../components/index'
 
 const StudentProfile = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ['student-profile'],
     queryFn: getMyProfile,
-    staleTime: Infinity
+    staleTime: Infinity,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false
   })
 
   const faceRegistered = !!profile?.face_embedding
@@ -58,10 +61,10 @@ const StudentProfile = () => {
                 </h2>
                 <div className="flex items-center gap-3 mt-3">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
-                    {profile?.roll_no}
+                    Roll: {profile?.roll_no}
                   </span>
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${faceRegistered ? 'bg-emerald-500/5 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/5 text-rose-600 border-rose-500/20'}`}>
-                    {faceRegistered ? 'Biometric Synced' : 'Sync Pending'}
+                  <span className="text-[10px] font-black uppercase tracking-widest text-violet-500 bg-violet-50 dark:bg-violet-500/10 px-3 py-1 rounded-xl border border-violet-200 dark:border-violet-500/20">
+                    Sem {profile?.sem_number} • Batch {profile?.batch_name}
                   </span>
                 </div>
               </div>
@@ -77,14 +80,16 @@ const StudentProfile = () => {
         >
           <div className="flex items-center gap-3 mb-8">
             <div className="w-2 h-8 bg-violet-600 rounded-full" />
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Student Registry</h3>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Academic Registry</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
             <InfoRow icon={User} label="Identity Record" value={`${profile?.first_name} ${profile?.last_name}`} />
             <InfoRow icon={Hash} label="Institutional Roll" value={profile?.roll_no} />
+            <InfoRow icon={Layers} label="Current Semester" value={`Semester ${profile?.sem_number || '—'}`} />
+            <InfoRow icon={Users} label="Assigned Batch" value={`Batch ${profile?.batch_name || '—'}`} />
+            <InfoRow icon={Building2} label="Department" value={profile?.dept_name?.toUpperCase() || '—'} />
             <InfoRow icon={Mail} label="Academic Email" value={profile?.email?.toLowerCase()} isEmail />
-            <InfoRow icon={Building2} label="Department" value={profile?.dept_name || profile?.dept_id} />
             <InfoRow icon={ShieldCheck} label="System Access" value="Student Tier" />
             <InfoRow icon={Clock} label="Enrolled Since" value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
           </div>

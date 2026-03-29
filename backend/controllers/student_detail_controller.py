@@ -117,12 +117,28 @@ async def get_my_profile(current_user):
     )
     if not student:
         return {"error": "Student not found"}
-    dept = await db.departments.find_one({"_id": student["dept_id"]})
+
+    dept, enrollment = await asyncio.gather(
+        db.departments.find_one({"_id": student["dept_id"]}),
+        db.student_enrollments.find_one({"student_id": student_id, "status": "active"})
+    )
+
+    sem = None
+    batch = None
+    if enrollment:
+        sem = await db.semesters.find_one({"_id": enrollment["sem_id"]})
+        if enrollment.get("batch_id"):
+            batch = await db.batches.find_one({"_id": enrollment["batch_id"]})
+
     return {
         **student_entity(student),
         "email": user["email"] if user else "",
         "dept_name": dept["name"] if dept else "",
         "dept_short": dept["short_name"] if dept else "",
+        "sem_id": enrollment["sem_id"] if enrollment else None,
+        "sem_number": sem["sem_number"] if sem else None,
+        "batch_id": enrollment.get("batch_id") if enrollment else None,
+        "batch_name": batch["name"] if batch else None,
     }
 
 async def upload_face(current_user, student_id: str, file):

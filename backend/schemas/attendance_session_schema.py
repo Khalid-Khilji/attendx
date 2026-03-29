@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 class SessionCreate(BaseModel):
     timetable_id: str
-    teacher_id: str
+    teacher_id: Optional[str] = None
     date: date
     group_photo: Optional[str] = None
 

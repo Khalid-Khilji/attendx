@@ -17,7 +17,10 @@ const SlotCard = ({ slot }) => {
   })
 
   const todaySession = useMemo(() => sessions.find(s => s.date?.slice(0, 10) === today), [sessions, today])
-
+  console.log('slot:', slot)
+  console.log('todaySession:', todaySession)
+  console.log('sessions:', sessions)
+  console.log('today:', today)
   return (
     <>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
