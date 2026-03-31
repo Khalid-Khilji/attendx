@@ -1,15 +1,22 @@
 import { useState, useRef, useCallback } from 'react'
-import { Camera, Upload, Play, Eye, Video, VideoOff, RefreshCw } from 'lucide-react'
+import { Camera, Upload, Play, Eye, Video, VideoOff, RefreshCw, Check, X, AlertTriangle } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createSession, markAttendanceByFrames } from '../../api/index'
+import { createSession, markAttendanceByFrames, confirmAttendance, cancelSession } from '../../api/index'
 import { Modal, Button, AttendanceRecords } from '../index'
+
+const statusColors = {
+    present: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
+    absent: 'text-red-500 bg-red-50 dark:bg-red-900/20',
+    review: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
+}
 
 const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
     const queryClient = useQueryClient()
     const [step, setStep] = useState(todaySession ? 'upload' : 'create')
     const [sessionId, setSessionId] = useState(todaySession?._id || null)
     const [frames, setFrames] = useState([])
-    const [result, setResult] = useState(null)
+    const [scanResult, setScanResult] = useState(null)
+    const [editedResults, setEditedResults] = useState([])
     const [viewRecords, setViewRecords] = useState(false)
     const [mode, setMode] = useState('upload')
     const [cameraActive, setCameraActive] = useState(false)
@@ -24,9 +31,9 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
     const createMutation = useMutation({
         mutationFn: createSession,
         onSuccess: (res) => {
+            if (res.error) return
             setSessionId(res._id)
             setStep('upload')
-            console.log('session response:', res)
             queryClient.invalidateQueries(['sessions', slot.course_id])
         }
     })
@@ -34,17 +41,34 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
     const markMutation = useMutation({
         mutationFn: ({ id, files }) => markAttendanceByFrames(id, files),
         onSuccess: (res) => {
-            setResult(res)
-            setStep('result')
-            queryClient.invalidateQueries(['sessions', slot.course_id])
+            if (res.error) return
+            setScanResult(res)
+            setEditedResults(res.results || [])
+            setStep('review')
             stopCamera()
+        }
+    })
+
+    const confirmMutation = useMutation({
+        mutationFn: () => confirmAttendance(sessionId, editedResults),
+        onSuccess: () => {
+            setStep('done')
+            queryClient.invalidateQueries(['sessions', slot.course_id])
+        }
+    })
+
+    const cancelMutation = useMutation({
+        mutationFn: () => cancelSession(sessionId),
+        onSuccess: () => {
+            queryClient.invalidateQueries(['sessions', slot.course_id])
+            handleClose()
         }
     })
 
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 1280, height: 720, facingMode: 'environment' }
+                video: { width: 1280, height: 720 }
             })
             streamRef.current = stream
             if (videoRef.current) {
@@ -73,9 +97,8 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
         if (!video || !canvas) return null
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(video, 0, 0)
-        return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+        canvas.getContext('2d').drawImage(video, 0, 0)
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
     }, [])
 
     const startRecording = useCallback(async () => {
@@ -86,13 +109,11 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
         for (let sec = 5; sec >= 1; sec--) {
             setCountdown(sec)
             const secondBlobs = []
-            // 5 frames per second
             for (let f = 0; f < 5; f++) {
                 await new Promise(r => setTimeout(r, 200))
                 const blob = await captureFrame()
                 if (blob) secondBlobs.push(blob)
             }
-            // Pick best frame from this second (largest size = most detail)
             if (secondBlobs.length > 0) {
                 const best = secondBlobs.reduce((a, b) => a.size > b.size ? a : b)
                 allBlobs.push(best)
@@ -102,192 +123,204 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
 
         setCountdown(null)
         setRecording(false)
-
-        // Convert blobs to File objects
-        const files = allBlobs.map((blob, i) => new File([blob], `frame_${i}.jpg`, { type: 'image/jpeg' }))
-        setFrames(files)
+        setFrames(allBlobs.map((blob, i) => new File([blob], `frame_${i}.jpg`, { type: 'image/jpeg' })))
     }, [captureFrame])
+
+    const flipStatus = (studentId) => {
+        setEditedResults(prev => prev.map(r => {
+            if (r.student_id !== studentId) return r
+            const next = r.status === 'present' ? 'absent' : r.status === 'absent' ? 'present' : 'present'
+            return { ...r, status: next }
+        }))
+    }
 
     const handleClose = () => {
         stopCamera()
         setStep(todaySession ? 'upload' : 'create')
         setSessionId(todaySession?._id || null)
         setFrames([])
-        setResult(null)
+        setScanResult(null)
+        setEditedResults([])
         setMode('upload')
         setCapturedFrames(0)
         onClose()
     }
 
-    const submitFrames = () => {
-        markMutation.mutate({ id: sessionId, files: frames })
-    }
+    const present = editedResults.filter(r => r.status === 'present').length
+    const absent = editedResults.filter(r => r.status === 'absent').length
+    const review = editedResults.filter(r => r.status === 'review').length
 
     return (
         <Modal isOpen={isOpen} onClose={handleClose} size="md">
-            <div className="mb-6">
+            <div className="mb-5">
                 <h2 className="text-xl font-black uppercase tracking-tight dark:text-white leading-tight">{slot.course_name}</h2>
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1.5">{slot.course_code} · SEM {slot.sem_number}</p>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">{slot.course_code} · SEM {slot.sem_number}</p>
             </div>
 
             {step === 'create' && (
-                <div className="py-4">
+                <div className="space-y-3 py-2">
                     <Button className="w-full h-14 rounded-2xl shadow-xl shadow-violet-500/20" icon={Play} isLoading={createMutation.isPending}
                         onClick={() => createMutation.mutate({
                             timetable_id: slot._id,
-                            teacher_id: slot.teacher_id,
                             date: new Date().toISOString().split('T')[0]
                         })}>
-                        Initialize Session
+                        Start Session
                     </Button>
                 </div>
             )}
 
             {step === 'upload' && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                     <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
-                        <button onClick={() => { setMode('upload'); stopCamera(); setFrames([]) }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mode === 'upload' ? 'bg-white dark:bg-zinc-900 text-violet-600 shadow-sm' : 'text-zinc-500'}`}>
-                            <Upload size={13} /> Upload
-                        </button>
-                        <button onClick={() => { setMode('camera'); setFrames([]) }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mode === 'camera' ? 'bg-white dark:bg-zinc-900 text-violet-600 shadow-sm' : 'text-zinc-500'}`}>
-                            <Camera size={13} /> Camera
-                        </button>
+                        {['upload', 'camera'].map(m => (
+                            <button key={m} onClick={() => { setMode(m); if (m === 'upload') stopCamera(); setFrames([]) }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${mode === m ? 'bg-white dark:bg-zinc-900 text-violet-600 shadow-sm' : 'text-zinc-500'}`}>
+                                {m === 'upload' ? <><Upload size={12} /> Upload</> : <><Camera size={12} /> Camera</>}
+                            </button>
+                        ))}
                     </div>
 
                     {mode === 'upload' ? (
-                        <label htmlFor="frame_upload" className="block cursor-pointer group">
-                            <div className={`rounded-3xl border-2 border-dashed transition-all p-10 text-center ${frames.length > 0 ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-violet-400'}`}>
-                                <Upload size={36} className="mx-auto mb-3 text-zinc-300 group-hover:text-violet-500 transition-colors" />
+                        <label className="block cursor-pointer">
+                            <div className={`rounded-3xl border-2 border-dashed p-10 text-center transition-all ${frames.length > 0 ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-violet-400'}`}>
+                                <Upload size={32} className="mx-auto mb-3 text-zinc-300" />
                                 <p className="text-xs font-black uppercase tracking-widest text-zinc-500">
-                                    {frames.length > 0 ? `${frames.length} frames ready` : 'Select class photos'}
+                                    {frames.length > 0 ? `${frames.length} photos ready` : 'Upload class photos'}
                                 </p>
-                                <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-widest">JPG · PNG · Multiple allowed</p>
-                                <input id="frame_upload" name="frames" type="file" accept="image/*" multiple className="hidden"
-                                    onChange={e => setFrames(Array.from(e.target.files))} />
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={e => setFrames(Array.from(e.target.files))} />
                             </div>
                         </label>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div className="relative rounded-3xl overflow-hidden bg-zinc-900 aspect-video">
                                 <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
                                 <canvas ref={canvasRef} className="hidden" />
-
                                 {!cameraActive && (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="text-center">
-                                            <VideoOff size={36} className="mx-auto mb-2 text-zinc-600" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Camera Off</p>
-                                        </div>
+                                        <VideoOff size={32} className="text-zinc-600" />
                                     </div>
                                 )}
-
-                                {recording && countdown && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                {recording && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                         <div className="text-center">
-                                            <div className="w-20 h-20 rounded-full bg-red-600/90 flex items-center justify-center mb-2 mx-auto shadow-2xl">
-                                                <span className="text-4xl font-black text-white">{countdown}</span>
+                                            <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center mx-auto mb-2">
+                                                <span className="text-3xl font-black text-white">{countdown}</span>
                                             </div>
-                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">
-                                                {capturedFrames}/5 frames
-                                            </p>
+                                            <p className="text-[10px] font-black text-white uppercase">{capturedFrames}/5 captured</p>
                                         </div>
                                     </div>
                                 )}
-
                                 {frames.length > 0 && !recording && (
-                                    <div className="absolute top-3 right-3 bg-emerald-600 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-full">
-                                        {frames.length} frames captured
+                                    <div className="absolute top-3 right-3 bg-emerald-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full">
+                                        {frames.length} frames ready
                                     </div>
                                 )}
                             </div>
-
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
                                 {!cameraActive ? (
-                                    <Button className="flex-1 h-12 rounded-xl" icon={Camera} onClick={startCamera}>
-                                        Start Camera
-                                    </Button>
+                                    <Button className="flex-1 h-11 rounded-xl" icon={Camera} onClick={startCamera}>Start Camera</Button>
                                 ) : recording ? (
-                                    <div className="flex-1 h-12 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 flex items-center justify-center gap-2 text-[10px] font-black uppercase text-red-600">
-                                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                                        Recording...
+                                    <div className="flex-1 h-11 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center gap-2 text-[10px] font-black text-red-600">
+                                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" /> Recording...
                                     </div>
                                 ) : (
                                     <>
-                                        <Button className="flex-1 h-12 rounded-xl" icon={Video} onClick={startRecording}
-                                            disabled={frames.length > 0}>
-                                            {frames.length > 0 ? 'Captured' : 'Record 5s'}
+                                        <Button className="flex-1 h-11 rounded-xl" icon={Video} onClick={startRecording} disabled={frames.length > 0}>
+                                            {frames.length > 0 ? '✓ Done' : 'Record 5s'}
                                         </Button>
                                         {frames.length > 0 && (
-                                            <Button variant="ghost" className="h-12 px-4 rounded-xl" icon={RefreshCw}
-                                                onClick={() => { setFrames([]); setCapturedFrames(0) }}>
-                                                Redo
-                                            </Button>
+                                            <Button variant="ghost" className="h-11 px-3 rounded-xl" icon={RefreshCw} onClick={() => { setFrames([]); setCapturedFrames(0) }} />
                                         )}
-                                        <Button variant="ghost" className="h-12 px-4 rounded-xl" icon={VideoOff} onClick={stopCamera}>
-                                            Stop
-                                        </Button>
+                                        <Button variant="ghost" className="h-11 px-3 rounded-xl" icon={VideoOff} onClick={stopCamera} />
                                     </>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 pt-2">
                         {!todaySession && (
-                            <Button variant="ghost" className="flex-1 h-12 rounded-xl" onClick={() => setStep('create')}>Back</Button>
+                            <Button variant="ghost" className="h-12 px-4 rounded-xl" onClick={() => setStep('create')}>Back</Button>
                         )}
-                        <Button className="flex-1 h-12 rounded-xl shadow-lg" icon={Upload}
+                        <Button className="flex-1 h-12 rounded-xl" icon={Upload}
                             disabled={frames.length === 0} isLoading={markMutation.isPending}
-                            onClick={submitFrames}>
-                            Sync Attendance
+                            onClick={() => markMutation.mutate({ id: sessionId, files: frames })}>
+                            Scan Attendance
+                        </Button>
+                    </div>
+
+                    {todaySession && (
+                        <div className="flex gap-3 pt-1 border-t dark:border-zinc-800">
+                            <Button variant="ghost" className="flex-1 h-11 text-[10px] font-black uppercase" icon={Eye} onClick={() => setViewRecords(true)}>View Records</Button>
+                            <Button variant="ghost" className="h-11 px-4 rounded-xl text-red-500 hover:bg-red-50" icon={X} onClick={() => cancelMutation.mutate()} isLoading={cancelMutation.isPending}>Cancel</Button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {step === 'review' && scanResult && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { label: 'Present', value: present, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
+                            { label: 'Absent', value: absent, color: 'text-red-500 bg-red-50 dark:bg-red-900/20' },
+                            { label: 'Review', value: review, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
+                        ].map(s => (
+                            <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
+                                <p className="text-xl font-black">{s.value}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest mt-0.5">{s.label}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl px-4 py-2.5 flex items-center gap-2 border border-amber-100 dark:border-amber-800">
+                        <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                        <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400">Review before confirming — flip status if wrong</p>
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto divide-y divide-zinc-50 dark:divide-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                        {editedResults.map(r => (
+                            <div key={r.student_id} className="flex items-center justify-between px-4 py-2.5">
+                                <div>
+                                    <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 capitalize">{r.name || r.student_id.slice(-6)}</p>
+                                    <p className="text-[9px] text-zinc-400">{Math.round((r.confidence || 0) * 100)}% confidence</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${statusColors[r.status]}`}>{r.status}</span>
+                                    <button onClick={() => flipStatus(r.student_id)}
+                                        className="text-[9px] font-black uppercase px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 transition-colors">
+                                        Flip
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <Button variant="ghost" className="h-12 px-4 rounded-xl text-red-500" icon={X}
+                            isLoading={cancelMutation.isPending}
+                            onClick={() => cancelMutation.mutate()}>
+                            Cancel Session
+                        </Button>
+                        <Button className="flex-1 h-12 rounded-xl" icon={Check}
+                            isLoading={confirmMutation.isPending}
+                            onClick={() => confirmMutation.mutate()}>
+                            Confirm & Save
                         </Button>
                     </div>
                 </div>
             )}
 
-            {step === 'result' && result && (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-3">
-                        {[
-                            { key: 'present', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
-                            { key: 'absent', color: 'text-red-500 bg-red-50 dark:bg-red-900/20' },
-                            { key: 'review', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
-                        ].map(({ key, color }) => (
-                            <div key={key} className={`rounded-2xl p-4 text-center ${color}`}>
-                                <p className="text-2xl font-black">{result[key]}</p>
-                                <p className="text-[9px] font-black uppercase tracking-widest mt-1">{key}</p>
-                            </div>
-                        ))}
+            {step === 'done' && (
+                <div className="py-8 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
+                        <Check size={28} className="text-emerald-600" />
                     </div>
-
-                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 space-y-2">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-3">Processing Stats</p>
-                        {[
-                            { label: 'Frames Processed', value: result.frames_processed },
-                            { label: 'Faces Detected', value: result.faces_detected },
-                            { label: 'Spoof Attempts', value: result.spoof_attempts },
-                        ].map(({ label, value }) => (
-                            <div key={label} className="flex justify-between">
-                                <span className="text-[10px] text-zinc-500">{label}</span>
-                                <span className="text-[10px] font-black text-zinc-700 dark:text-zinc-300">{value}</span>
-                            </div>
-                        ))}
-                    </div>
-
+                    <p className="text-lg font-black uppercase tracking-tight dark:text-white">Attendance Saved</p>
                     <div className="flex gap-3">
-                        <Button variant="ghost" className="flex-1 h-12 rounded-xl" onClick={handleClose}>Finish</Button>
-                        <Button className="flex-1 h-12 rounded-xl" icon={Eye} onClick={() => setViewRecords(true)}>Roster</Button>
+                        <Button variant="ghost" className="flex-1 h-12 rounded-xl" onClick={handleClose}>Close</Button>
+                        <Button className="flex-1 h-12 rounded-xl" icon={Eye} onClick={() => setViewRecords(true)}>View Roster</Button>
                     </div>
-                </div>
-            )}
-
-            {todaySession && step !== 'result' && (
-                <div className="mt-4 pt-4 border-t dark:border-zinc-800">
-                    <Button variant="ghost" className="w-full h-11 text-[10px] font-black uppercase" icon={Eye} onClick={() => setViewRecords(true)}>
-                        Quick View Logs
-                    </Button>
                 </div>
             )}
 

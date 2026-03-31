@@ -60,7 +60,17 @@ const reviewAttendanceRecord = async (recordId, data) => {
     }
 };
 
+const confirmAttendance = async (sessionId, results) => {
+    const response = await axiosInstance.post(`/sessions/confirm/${sessionId}`, { results });
+    return response.data;
+};
+
+const cancelSession = async (sessionId) => {
+    const response = await axiosInstance.delete(`/sessions/cancel/${sessionId}`);
+    return response.data;
+};
+
 export {
     createSession, getCourseSessions, markAttendanceByFrames,
-    getSessionRecords, getMyAttendance, reviewAttendanceRecord
+    getSessionRecords, getMyAttendance, reviewAttendanceRecord, confirmAttendance, cancelSession
 };

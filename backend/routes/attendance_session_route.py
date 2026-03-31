@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form
 from typing import List
-from schemas.attendance_session_schema import SessionCreate
+from schemas.attendance_session_schema import SessionCreate, ConfirmAttendance
 from controllers.attendance_session_controller import (
     create_session,
     get_course_sessions,
@@ -31,3 +31,18 @@ async def mark_by_frames(
     current_user=Depends(role_required(["teacher"]))
 ):
     return await mark_attendance_by_frames(current_user, session_id, frames)
+
+@router.post("/confirm/{session_id}")
+async def confirm(
+    session_id: str,
+    data: ConfirmAttendance,
+    current_user=Depends(role_required(["teacher"]))
+):
+    return await confirm_attendance(current_user, session_id, data.results)
+
+@router.delete("/cancel/{session_id}")
+async def cancel(
+    session_id: str,
+    current_user=Depends(role_required(["teacher"]))
+):
+    return await cancel_session(current_user, session_id)

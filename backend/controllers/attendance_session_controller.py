@@ -70,10 +70,6 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     course = await db.courses.find_one({"_id": session["course_id"]})
     course_name = course["name"] if course else "Unknown Course"
 
-    already = await db.attendance_records.find_one({"session_id": session_id})
-    if already:
-        return {"error": "Attendance already marked for this session"}
-
     enrollments = await db.student_enrollments.find({
         "sem_id": session["sem_id"],
         "status": "active"
@@ -95,22 +91,15 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     ]
 
     frames_bytes = [await f.read() for f in frames]
-
     face_result = await process_frames(frames_bytes, stored_embeddings)
 
     if "error" in face_result:
         return face_result
 
     results = face_result["results"]
-
-    records_to_insert = [
-        record_create_model(session_id, r["student_id"], r["status"], r["confidence"])
-        for r in results
-        if r["status"] in ("present", "review", "absent")
-    ]
-
-    if records_to_insert:
-        await db.attendance_records.insert_many(records_to_insert)
+    present = sum(1 for r in results if r["status"] == "present")
+    review = sum(1 for r in results if r["status"] == "review")
+    absent = sum(1 for r in results if r["status"] == "absent")
 
     if frames_bytes:
         image_url = await upload_image(frames_bytes[0], f"sessions/{session_id}/frame.jpg")
@@ -120,27 +109,66 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
                 {"$set": {"group_photo": image_url}}
             )
 
-    await log_action(
-        current_user, 
-        "CREATE", 
-        "ATTENDANCE_RECORDS", 
-        session_id, 
-        f"{course_name} ({session['date']})",
-        {"faces_detected": face_result["faces_detected"], "present": sum(1 for r in results if r["status"] == "present")}
-    )
-
-    present = sum(1 for r in results if r["status"] == "present")
-    review = sum(1 for r in results if r["status"] == "review")
-    absent = sum(1 for r in results if r["status"] == "absent")
+    student_map = {s["_id"]: s for s in students}
+    results_with_names = []
+    for r in results:
+        s = student_map.get(r["student_id"], {})
+        results_with_names.append({
+            **r,
+            "name": f"{s.get('first_name', '')} {s.get('last_name', '')}".strip(),
+            "roll_no": s.get("roll_no", "")
+        })
 
     return {
         "session_id": session_id,
-        "total_students": len(results),
+        "total_students": len(results_with_names),
         "present": present,
         "review": review,
         "absent": absent,
         "spoof_attempts": face_result["spoof_attempts"],
         "frames_processed": face_result["frames_processed"],
         "faces_detected": face_result["faces_detected"],
-        "results": results
+        "results": results_with_names
     }
+
+
+async def confirm_attendance(current_user, session_id: str, results: list):
+    session = await db.attendance_sessions.find_one({"_id": session_id})
+    if not session:
+        return {"error": "Session not found"}
+
+    course = await db.courses.find_one({"_id": session["course_id"]})
+    course_name = course["name"] if course else "Unknown Course"
+
+    await db.attendance_records.delete_many({"session_id": session_id})
+
+    records_to_insert = [
+        record_create_model(session_id, r["student_id"], r["status"], r.get("confidence", 0.0))
+        for r in results
+    ]
+
+    if records_to_insert:
+        await db.attendance_records.insert_many(records_to_insert)
+
+    await log_action(
+        current_user,
+        "CREATE",
+        "ATTENDANCE_RECORDS",
+        session_id,
+        f"{course_name} ({session['date']})",
+        {"present": sum(1 for r in results if r["status"] == "present")}
+    )
+
+    return {"message": "Attendance confirmed", "total": len(records_to_insert)}
+
+
+async def cancel_session(current_user, session_id: str):
+    session = await db.attendance_sessions.find_one({"_id": session_id})
+    if not session:
+        return {"error": "Session not found"}
+
+    await db.attendance_records.delete_many({"session_id": session_id})
+    await db.attendance_sessions.delete_one({"_id": session_id})
+
+    await log_action(current_user, "DELETE", "ATTENDANCE_SESSION", session_id, "Session cancelled")
+    return {"message": "Session cancelled"}

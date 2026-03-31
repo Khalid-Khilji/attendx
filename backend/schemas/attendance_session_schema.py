@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import date, datetime
 
 class SessionCreate(BaseModel):
@@ -20,3 +20,7 @@ class SessionResponse(BaseModel):
 
     class Config:
         populate_by_name = True
+
+
+class ConfirmAttendance(BaseModel):
+    results: List[dict]
