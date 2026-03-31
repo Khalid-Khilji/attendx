@@ -67,13 +67,13 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     if not session:
         return {"error": "Session not found"}
 
-    course = await db.courses.find_one({"_id": session["course_id"]})
-    course_name = course["name"] if course else "Unknown Course"
-
     enrollments = await db.student_enrollments.find({
         "sem_id": session["sem_id"],
         "status": "active"
     }).to_list(None)
+
+    if not enrollments:
+        return {"error": "No active enrollments found for this semester"}
 
     student_ids = [e["student_id"] for e in enrollments]
 
@@ -83,7 +83,7 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     }).to_list(None)
 
     if not students:
-        return {"error": "No students with registered faces found"}
+        return {"error": "No students in this class have registered faces"}
 
     stored_embeddings = [
         {"student_id": s["_id"], "embedding": s["face_embedding"]}
@@ -97,9 +97,17 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
         return face_result
 
     results = face_result["results"]
-    present = sum(1 for r in results if r["status"] == "present")
-    review = sum(1 for r in results if r["status"] == "review")
-    absent = sum(1 for r in results if r["status"] == "absent")
+    
+    student_map = {s["_id"]: s for s in students}
+    results_with_names = []
+    
+    for r in results:
+        s_detail = student_map.get(r["student_id"], {})
+        results_with_names.append({
+            **r,
+            "name": f"{s_detail.get('first_name', '')} {s_detail.get('last_name', '')}".strip() or "Unknown",
+            "roll_no": s_detail.get("roll_no", "N/A")
+        })
 
     if frames_bytes:
         image_url = await upload_image(frames_bytes[0], f"sessions/{session_id}/frame.jpg")
@@ -109,28 +117,17 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
                 {"$set": {"group_photo": image_url}}
             )
 
-    student_map = {s["_id"]: s for s in students}
-    results_with_names = []
-    for r in results:
-        s = student_map.get(r["student_id"], {})
-        results_with_names.append({
-            **r,
-            "name": f"{s.get('first_name', '')} {s.get('last_name', '')}".strip(),
-            "roll_no": s.get("roll_no", "")
-        })
-
     return {
         "session_id": session_id,
         "total_students": len(results_with_names),
-        "present": present,
-        "review": review,
-        "absent": absent,
+        "present": sum(1 for r in results if r["status"] == "present"),
+        "review": sum(1 for r in results if r["status"] == "review"),
+        "absent": sum(1 for r in results if r["status"] == "absent"),
         "spoof_attempts": face_result["spoof_attempts"],
         "frames_processed": face_result["frames_processed"],
         "faces_detected": face_result["faces_detected"],
         "results": results_with_names
     }
-
 
 async def confirm_attendance(current_user, session_id: str, results: list):
     session = await db.attendance_sessions.find_one({"_id": session_id})
@@ -160,7 +157,6 @@ async def confirm_attendance(current_user, session_id: str, results: list):
     )
 
     return {"message": "Attendance confirmed", "total": len(records_to_insert)}
-
 
 async def cancel_session(current_user, session_id: str):
     session = await db.attendance_sessions.find_one({"_id": session_id})

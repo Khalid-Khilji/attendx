@@ -68,19 +68,49 @@ async def get_sem_timetable(sem_id: str, batch_id: str = None):
     return await db.timetable.aggregate(pipeline).to_list(None)
 
 async def get_my_timetable(current_user):
-    teacher_id = current_user.get("user_id")
+    user_id = current_user.get("user_id")
+    
+    bridge_records = await db.course_teachers.find({"teacher_id": user_id}).to_list(None)
+    bridge_ids = [record["_id"] for record in bridge_records]
+
     pipeline = [
-        {"$match": {"teacher_id": teacher_id, "is_active": True}},
-        {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+        {
+            "$match": {
+                "teacher_id": {"$in": bridge_ids}, 
+                "is_active": True
+            }
+        },
+        {
+            "$lookup": {
+                "from": "courses", 
+                "localField": "course_id", 
+                "foreignField": "_id", 
+                "as": "course"
+            }
+        },
         {"$unwind": "$course"},
-        {"$lookup": {"from": "semesters", "localField": "sem_id", "foreignField": "_id", "as": "semester"}},
+        {
+            "$lookup": {
+                "from": "semesters", 
+                "localField": "sem_id", 
+                "foreignField": "_id", 
+                "as": "semester"
+            }
+        },
         {"$unwind": "$semester"},
-        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {
+            "$lookup": {
+                "from": "batches", 
+                "localField": "batch_id", 
+                "foreignField": "_id", 
+                "as": "batch"
+            }
+        },
         {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
         {
             "$project": {
                 "_id": 1, "day_of_week": 1, "start_time": 1, "end_time": 1,
-                "course_id": 1, "sem_id": 1, "teacher_id": 1, "batch_id": 1,
+                "course_id": 1, "sem_id": 1, "batch_id": 1,
                 "course_name": "$course.name",
                 "course_code": "$course.course_code",
                 "sem_number": "$semester.sem_number",
@@ -89,6 +119,7 @@ async def get_my_timetable(current_user):
         },
         {"$sort": {"day_of_week": 1, "start_time": 1}}
     ]
+    
     return await db.timetable.aggregate(pipeline).to_list(None)
     
 async def get_student_timetable(current_user):

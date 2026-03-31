@@ -4,7 +4,9 @@ from schemas.attendance_session_schema import SessionCreate, ConfirmAttendance
 from controllers.attendance_session_controller import (
     create_session,
     get_course_sessions,
-    mark_attendance_by_frames
+    mark_attendance_by_frames,
+    cancel_session,
+    confirm_attendance
 )
 from utils.dependencies import role_required
 

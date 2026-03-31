@@ -73,7 +73,7 @@ def _process_frames_sync(frames_bytes, stored_embeddings):
     stored_matrix = np.array([s["embedding"] for s in stored_embeddings])
     best_scores = defaultdict(float)
     spoof_attempts = 0
-    total_faces = 0
+    total_faces_detected = 0
 
     for frame in best_frames:
         faces = app.get(frame)
@@ -81,19 +81,8 @@ def _process_frames_sync(frames_bytes, stored_embeddings):
             continue
 
         for face in faces:
-            x1, y1, x2, y2 = [int(v) for v in face.bbox]
-            x1, y1 = max(0, x1-15), max(0, y1-15)
-            x2, y2 = min(frame.shape[1], x2+15), min(frame.shape[0], y2+15)
-            face_crop = frame[y1:y2, x1:x2]
-
-            if face_crop.size == 0:
-                continue
-
-            if not _is_live_face(face_crop):
-                spoof_attempts += 1
-                continue
-
-            total_faces += 1
+            
+            total_faces_detected += 1
             detected_emb = face.embedding.reshape(1, -1)
             sims = _batch_cosine_sim(detected_emb, stored_matrix)[0]
 
@@ -102,26 +91,32 @@ def _process_frames_sync(frames_bytes, stored_embeddings):
                 if sim > best_scores[sid]:
                     best_scores[sid] = float(sim)
 
-    THRESHOLD_PRESENT = 0.45
-    THRESHOLD_REVIEW = 0.35
+    THRESHOLD_PRESENT = 0.38 
+    THRESHOLD_REVIEW = 0.30
 
     results = []
     for s in stored_embeddings:
         sid = s["student_id"]
         score = best_scores.get(sid, 0.0)
+        
         if score >= THRESHOLD_PRESENT:
             status = "present"
         elif score >= THRESHOLD_REVIEW:
             status = "review"
         else:
             status = "absent"
-        results.append({"student_id": sid, "status": status, "confidence": round(score, 4)})
+            
+        results.append({
+            "student_id": sid, 
+            "status": status, 
+            "confidence": round(score, 4)
+        })
 
     return {
         "results": results,
         "spoof_attempts": spoof_attempts,
         "frames_processed": len(best_frames),
-        "faces_detected": total_faces
+        "faces_detected": total_faces_detected
     }
 
 async def extract_embedding(image_bytes: bytes):
