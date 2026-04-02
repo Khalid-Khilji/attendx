@@ -22,7 +22,7 @@ const itemVariants = {
 const About = () => {
   const values = [
     { icon: Shield, title: "Privacy First", description: "End-to-end encryption for all facial biometric data." },
-    { icon: Target, title: "High Accuracy", description: "99.9% precision using state-of-the-art ArcFace engines." },
+    { icon: Target, title: "High Accuracy", description: "99.9% precision using state-of-the-art InsightFace engines." },
     { icon: Users, title: "User-Centric", description: "Intuitive workflows for students and faculty members." },
     { icon: Award, title: "Industry Leading", description: "Setting new standards in automated academic tracking." }
   ]
