@@ -68,7 +68,11 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 1280, height: 720 }
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: "environment"
+                }
             })
             streamRef.current = stream
             if (videoRef.current) {
@@ -78,6 +82,17 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
             setCameraActive(true)
         } catch (err) {
             console.error('Camera error:', err)
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                streamRef.current = fallbackStream;
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                    videoRef.current.play();
+                }
+                setCameraActive(true);
+            } catch (fallbackErr) {
+                alert("Camera access denied or not found");
+            }
         }
     }
 
@@ -109,15 +124,19 @@ const AttendanceModal = ({ isOpen, onClose, slot, todaySession }) => {
         for (let sec = 5; sec >= 1; sec--) {
             setCountdown(sec)
             const secondBlobs = []
-            for (let f = 0; f < 5; f++) {
-                await new Promise(r => setTimeout(r, 200))
+
+            for (let f = 0; f < 6; f++) {
+                await new Promise(r => setTimeout(r, 150))
                 const blob = await captureFrame()
                 if (blob) secondBlobs.push(blob)
             }
+
             if (secondBlobs.length > 0) {
-                const best = secondBlobs.reduce((a, b) => a.size > b.size ? a : b)
-                allBlobs.push(best)
-                setCapturedFrames(prev => prev + 1)
+                const sorted = secondBlobs.sort((a, b) => b.size - a.size)
+                const top3 = sorted.slice(0, 3)
+
+                allBlobs.push(...top3)
+                setCapturedFrames(prev => prev + top3.length)
             }
         }
 
