@@ -35,7 +35,7 @@ function App() {
         toastClassName={() => "relative flex p-1 min-h-10 rounded-xl justify-between overflow-hidden cursor-pointer bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-xl"}
       />
 
-      <main className="pt-24 md:pt-28 min-h-screen">
+      <main className="pt-24 md:pt-28 min-h-screen pb-10 md:pb-20">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

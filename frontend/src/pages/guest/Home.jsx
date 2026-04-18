@@ -7,7 +7,7 @@ const Home = () => {
     {
       icon: Camera,
       title: "Face Recognition",
-      description: "Face detection using OpenCV & Insightface Buffalo_I for accurate attendance marking",
+      description: "Advanced retina face detection using OpenCV & ArcFace for accurate attendance marking",
       color: "from-blue-500 to-cyan-500"
     },
     {
@@ -44,8 +44,8 @@ const Home = () => {
 
   const steps = [
     { title: "Teacher Records Class", description: "Teacher initiates attendance session with subject details" },
-    { title: "Face Detection", description: "Students' faces are detected using insightface scanners" },
-    { title: "Face Recognition", description: "Advanced face matching for accurate identification" },
+    { title: "Face Detection", description: "Students' faces are detected using retina scanners" },
+    { title: "ArcFace Recognition", description: "Advanced face matching for accurate identification" },
     { title: "Auto-mark Attendance", description: "Attendance automatically marked with timestamps" }
   ]
 
@@ -87,7 +87,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-500">
+    <div className="min-h-screen dark:bg-zinc-950 transition-colors duration-500">
       <section className="relative pt-6 md:pt-10 pb-16 px-4 overflow-hidden">
         <motion.div 
           initial={{ opacity: 0 }}
@@ -172,7 +172,7 @@ const Home = () => {
             }}
             className="text-sm sm:text-base md:text-lg lg:text-xl text-zinc-500 dark:text-zinc-400 mb-8 md:mb-10 lg:mb-12 max-w-2xl mx-auto font-medium leading-relaxed px-4"
           >
-            Mark attendance instantly with using OpenCV & InsightFace Buffalo_I. 
+            Mark attendance instantly with retina face detection using OpenCV & ArcFace. 
             Smart, secure, and completely automated.
           </motion.p>
 

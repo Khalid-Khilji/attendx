@@ -27,7 +27,7 @@ const Contact = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 pb-12 overflow-x-hidden selection:bg-violet-500/30">
+    <div className="min-h-screen dark:bg-zinc-950 pb-12 overflow-x-hidden selection:bg-violet-500/30">
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
         <div className="absolute top-[10%] left-[-5%] w-64 h-64 bg-violet-500/10 blur-[100px] rounded-full" />
         <div className="absolute bottom-[20%] right-[-5%] w-80 h-80 bg-blue-500/10 blur-[120px] rounded-full" />
@@ -73,7 +73,7 @@ const Contact = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-4 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-5 rounded-2xl hover:border-violet-500/30 transition-all"
+                className="flex items-center gap-4 bg-white dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-5 rounded-2xl hover:border-violet-500/30 transition-all"
               >
                 <div className={`w-12 h-12 shrink-0 rounded-xl bg-linear-to-br ${item.color} flex items-center justify-center text-white shadow-lg`}>
                   <item.icon size={20} strokeWidth={2.5} />

@@ -114,6 +114,51 @@ async def get_all_teachers():
         },
         {"$unwind": "$department"},
         {
+            "$lookup": {
+                "from": "course_teachers",
+                "let": {"t_id": "$_id"},
+                "pipeline": [
+                    { "$match": { "$expr": { "$eq": ["$teacher_id", "$$t_id"] } } },
+                    {
+                        "$lookup": {
+                            "from": "courses",
+                            "let": {"c_id": "$course_id"},
+                            "pipeline": [
+                                { "$match": { "$expr": { "$eq": ["$_id", "$$c_id"] } } }
+                            ],
+                            "as": "course_info"
+                        }
+                    },
+                    {"$unwind": "$course_info"},
+                    {
+                        "$lookup": {
+                            "from": "batches",
+                            "let": {"b_id": "$batch_id"},
+                            "pipeline": [
+                                { "$match": { "$expr": { "$eq": ["$_id", "$$b_id"] } } }
+                            ],
+                            "as": "batch_info"
+                        }
+                    },
+                    {"$unwind": {"path": "$batch_info", "preserveNullAndEmptyArrays": True}},
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "course_id": "$course_info._id",
+                            "course_code": "$course_info.course_code",
+                            "course_name": "$course_info.name",
+                            "short_name": "$course_info.short_name",
+                            "sem_id": "$course_info.sem_id",
+                            "batch_id": "$batch_info._id",
+                            "batch_name": "$batch_info.name",
+                            "is_primary": 1
+                        }
+                    }
+                ],
+                "as": "assignments"
+            }
+        },
+        {
             "$project": {
                 "_id": 1,
                 "user_id": 1,
@@ -124,7 +169,8 @@ async def get_all_teachers():
                 "dept_name": "$department.name",
                 "email": "$user.email",
                 "is_active": "$user.is_active",
-                "created_at": 1
+                "created_at": 1,
+                "assignments": 1
             }
         }
     ]

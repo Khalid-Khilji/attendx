@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { UserCheck, User, Hash, Fingerprint, ChevronDown } from 'lucide-react';
 import { createTeacher, updateTeacher } from '../../api/index';
 import { Modal, Input, Button } from '../../components/index';
+import { toast } from 'react-toastify';
 
 const TeacherModal = ({ isOpen, onClose, editData = null, departments = [] }) => {
     const queryClient = useQueryClient();
@@ -12,20 +13,27 @@ const TeacherModal = ({ isOpen, onClose, editData = null, departments = [] }) =>
     const [showPass, setShowPass] = useState(false);
 
     const mutation = useMutation({
-        mutationFn: (data) => editData ? updateTeacher(editData._id, data) : createTeacher(data),
-        onSuccess: (res) => {
-            queryClient.invalidateQueries(['teachers']);
-            if (!editData && res.email) {
-                setCredentials({
-                    email: res.email,
-                    password: res.generated_password,
-                    name: `${res.teacher.first_name} ${res.teacher.last_name}`
-                });
-            } else {
-                onClose();
-            }
+    mutationFn: (data) => editData ? updateTeacher(editData._id, data) : createTeacher(data),
+    onSuccess: (res) => {
+        if (res.error) {
+            toast.error(res.error);
+            return;
         }
-    });
+        queryClient.invalidateQueries(['teachers']);
+        if (!editData && res.email) {
+            setCredentials({
+                email: res.email,
+                password: res.generated_password,
+                name: `${res.teacher.first_name} ${res.teacher.last_name}`
+            });
+        } else {
+            onClose();
+        }
+    },
+    onError: (err) => {
+        toast.error(err.error || "Operation failed. Faculty ID might be duplicate.");
+    }
+});
 
     const formatToSentenceCase = (str) => {
         if (!str) return "";

@@ -28,7 +28,7 @@ const About = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 pb-20 overflow-hidden">
+    <div className="min-h-screen dark:bg-zinc-950 pb-20 overflow-hidden">
       <section className="px-4 sm:px-6 pb-16 relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 opacity-30">
           <div className="absolute top-0 right-[10%] w-48 sm:w-56 md:w-72 h-48 sm:h-56 md:h-72 bg-violet-500/20 blur-[80px] sm:blur-[100px] rounded-full" />
