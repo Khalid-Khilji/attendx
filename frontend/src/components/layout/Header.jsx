@@ -65,18 +65,18 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 w-full px-4 py-4 md:px-8">
-        <nav className="mx-auto max-w-7xl rounded-3xl border border-white/20 bg-white/70 shadow-2xl backdrop-blur-2xl dark:border-zinc-800/50 dark:bg-zinc-950/70 transition-all duration-500 overflow-hidden">
-          <div className="flex h-16 items-center justify-between px-6">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full px-3 sm:px-4 py-3 sm:py-4">
+        <nav className="mx-auto max-w-7xl rounded-2xl sm:rounded-3xl border border-white/20 bg-white/70 shadow-2xl backdrop-blur-2xl dark:border-zinc-800/50 dark:bg-zinc-950/70 transition-all duration-500 overflow-hidden">
+          <div className="flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
 
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
               <motion.div
                 whileHover={{ rotate: 15 }}
-                className="rounded-xl bg-linear-to-br from-violet-600 to-indigo-600 p-2 text-white shadow-lg shadow-violet-500/20"
+                className="rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 p-1.5 sm:p-2 text-white shadow-lg shadow-violet-500/20"
               >
-                <GraduationCap size={22} strokeWidth={2.5} />
+                <GraduationCap size={18} strokeWidth={2.5} className="sm:size-[22px]" />
               </motion.div>
-              <span className="text-xl font-black uppercase tracking-tighter dark:text-white">
+              <span className="text-lg sm:text-xl font-black uppercase tracking-tighter dark:text-white">
                 Attend<span className="text-violet-600">x</span>
               </span>
             </Link>
@@ -87,39 +87,43 @@ const Header = () => {
                   key={link.path}
                   to={link.path}
                   className={({ isActive }) =>
-                    `px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-2xl flex items-center gap-2.5 ${isActive
+                    `px-4 xl:px-5 py-2 text-[9px] xl:text-[10px] font-black uppercase tracking-widest transition-all rounded-2xl flex items-center gap-2 ${isActive
                       ? 'bg-violet-600 text-white shadow-xl shadow-violet-500/20'
                       : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                     }`
                   }
                 >
-                  {link.icon && <link.icon size={14} strokeWidth={3} />}
-                  {link.name}
+                  {link.icon && <link.icon size={12} strokeWidth={3} className="xl:size-[14px]" />}
+                  <span className="hidden xl:inline">{link.name}</span>
+                  <span className="xl:hidden">{link.name.slice(0, 4)}</span>
                 </NavLink>
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="ghost"
                 onClick={toggleMode}
-                className="h-10 w-10 p-0 rounded-2xl border-none bg-zinc-100 dark:bg-zinc-800"
+                className="h-8 w-8 sm:h-10 sm:w-10 p-0 rounded-xl sm:rounded-2xl border-none bg-zinc-100 dark:bg-zinc-800"
                 icon={isDark ? Sun : Moon}
+                iconSize={16}
               />
 
-              {user ? (
+              {user && (
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsLogoutOpen(true)}
-                  className="h-10 w-10 flex items-center justify-center rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                  className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm"
                 >
-                  <LogOut size={18} strokeWidth={2.5} />
+                  <LogOut size={16} strokeWidth={2.5} className="sm:size-[18px]" />
                 </motion.button>
-              ) : (
+              )}
+
+              {!user && (
                 <div className="hidden sm:block">
                   <Button
                     onClick={() => setIsLoginOpen(true)}
-                    className="px-8 rounded-2xl text-[10px] font-black shadow-violet-600/20"
+                    className="px-4 sm:px-6 h-8 sm:h-10 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black shadow-violet-600/20"
                   >
                     Portal Login
                   </Button>
@@ -128,9 +132,9 @@ const Header = () => {
 
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="lg:hidden h-10 w-10 flex items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+                className="lg:hidden h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-xl sm:rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
               >
-                {isOpen ? <X size={20} /> : <Menu size={20} />}
+                {isOpen ? <X size={18} className="sm:size-5" /> : <Menu size={18} className="sm:size-5" />}
               </button>
             </div>
           </div>
@@ -143,29 +147,29 @@ const Header = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="lg:hidden border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
               >
-                <div className="grid grid-cols-2 gap-3 p-6">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 p-4 sm:p-6">
                   {navLinks.map((link) => (
                     <NavLink
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
                       className={({ isActive }) =>
-                        `flex flex-col items-center justify-center gap-3 p-5 rounded-4xl transition-all border-2 ${isActive
-                          ? 'bg-violet-600 border-violet-600 text-white shadow-2xl'
-                          : 'bg-zinc-50 dark:bg-zinc-900 border-transparent text-zinc-500 dark:text-zinc-400'
+                        `flex flex-col items-center justify-center gap-2 sm:gap-3 p-3 sm:p-5 rounded-2xl sm:rounded-3xl transition-all border ${isActive
+                          ? 'bg-violet-600 border-violet-600 text-white shadow-xl'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400'
                         }`
                       }
                     >
-                      {link.icon && <link.icon size={22} strokeWidth={2.5} />}
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em]">{link.name}</span>
+                      {link.icon && <link.icon size={18} strokeWidth={2.5} className="sm:size-[22px]" />}
+                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]">{link.name}</span>
                     </NavLink>
                   ))}
 
                   {!user && (
-                    <div className="col-span-2 pt-2">
+                    <div className="col-span-2 pt-1 sm:pt-2">
                       <Button
                         onClick={() => { setIsOpen(false); setIsLoginOpen(true); }}
-                        className="w-full py-6 rounded-4xl text-xs font-black uppercase tracking-[0.2em]"
+                        className="w-full py-3 sm:py-5 rounded-2xl sm:rounded-3xl text-[10px] sm:text-xs font-black uppercase tracking-[0.15em] sm:tracking-[0.2em]"
                       >
                         Enter Portal
                       </Button>
