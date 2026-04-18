@@ -45,4 +45,22 @@ const getMyEnrollment = async () => {
     }
 };
 
-export { enrollStudent, promoteStudent, getEnrollmentHistory, getSemStudents, getMyEnrollment };
+const updateEnrollment = async (enrollmentId, data) => {
+    try {
+        const response = await axiosInstance.patch(`/enrollments/update/${enrollmentId}`, data);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error.message;
+    }
+};
+
+const deleteEnrollment = async (enrollmentId) => {
+    try {
+        const response = await axiosInstance.delete(`/enrollments/delete/${enrollmentId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error.message;
+    }
+};
+
+export { enrollStudent, promoteStudent, getEnrollmentHistory, getSemStudents, getMyEnrollment, updateEnrollment, deleteEnrollment };

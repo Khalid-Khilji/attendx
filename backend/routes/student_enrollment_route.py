@@ -4,7 +4,9 @@ from controllers.student_enrollment_controller import (
     enroll_student,
     promote_student,
     get_student_enrollment_history,
-    get_sem_students
+    get_sem_students,
+    update_enrollment,
+    delete_enrollment
 )
 from utils.dependencies import role_required
 
@@ -38,3 +40,18 @@ async def students_in_sem(
     current_user=Depends(role_required(["admin", "teacher"]))
 ):
     return await get_sem_students(sem_id)
+
+@router.patch("/update/{enrollment_id}")
+async def edit_enrollment(
+    enrollment_id: str,
+    data: dict,
+    current_user=Depends(role_required(["admin"]))
+):
+    return await update_enrollment(current_user, enrollment_id, data)
+
+@router.delete("/delete/{enrollment_id}")
+async def remove_enrollment(
+    enrollment_id: str,
+    current_user=Depends(role_required(["admin"]))
+):
+    return await delete_enrollment(current_user, enrollment_id)

@@ -313,7 +313,7 @@ const Teachers = () => {
                         </span>
                         <span className="hidden sm:block text-zinc-300 dark:text-zinc-700">•</span>
                         <span className="text-[10px] sm:text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
-                          <Briefcase size={10} /> {departments.find(d => d._id === t.dept_id)?.name || 'General'}
+                          <Briefcase size={10} /> {formatName(`${departments.find(d => d._id === t.dept_id)?.name}`) || 'General'}
                         </span>
                         <span className="hidden sm:block text-zinc-300 dark:text-zinc-700">•</span>
                         <div className="flex items-center gap-1">

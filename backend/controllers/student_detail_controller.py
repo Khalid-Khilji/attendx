@@ -82,6 +82,8 @@ async def delete_student(current_user, student_id: str):
     if not student:
         return {"error": "Student not found"}
 
+    await db.student_enrollments.delete_many({"student_id": student_id})
+    
     await db.users.update_one({"_id": student_id}, {"$set": {"is_active": False}})
     
     await log_action(
@@ -92,22 +94,83 @@ async def delete_student(current_user, student_id: str):
         f"{student['first_name']} {student['last_name']} ({student['roll_no']})"
     )
     
-    return {"message": "Student disabled"}
+    return {"message": "Student and all enrollments deleted successfully"}
 
 async def get_all_students(sem_id: str = None, dept_id: str = None):
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "_id",
+                "foreignField": "_id",
+                "as": "user"
+            }
+        },
+        {"$unwind": "$user"},
+        {
+            "$lookup": {
+                "from": "departments",
+                "localField": "dept_id",
+                "foreignField": "_id",
+                "as": "department"
+            }
+        },
+        {"$unwind": {"path": "$department", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "student_enrollments",
+                "let": {"s_id": "$_id"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$eq": ["$student_id", "$$s_id"]}, "status": "active"}},
+                    {"$limit": 1},
+                    {
+                        "$lookup": {
+                            "from": "semesters",
+                            "localField": "sem_id",
+                            "foreignField": "_id",
+                            "as": "semester"
+                        }
+                    },
+                    {"$unwind": {"path": "$semester", "preserveNullAndEmptyArrays": True}}
+                ],
+                "as": "active_enrollment"
+            }
+        },
+        {
+            "$addFields": {
+                "enrollment_status": {"$ifNull": [{"$arrayElemAt": ["$active_enrollment.status", 0]}, None]},
+                "current_sem": {"$ifNull": [{"$arrayElemAt": ["$active_enrollment.semester.sem_number", 0]}, None]},
+                "current_batch": {"$ifNull": [{"$arrayElemAt": ["$active_enrollment.batch_id", 0]}, None]},
+                "dept_name": "$department.name",
+                "email": "$user.email"
+            }
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "user_id": 1,
+                "first_name": 1,
+                "last_name": 1,
+                "roll_no": 1,
+                "dept_id": 1,
+                "dept_name": 1,
+                "email": 1,
+                "profile_pic": 1,
+                "face_embedding": 1,
+                "enrollment_status": 1,
+                "current_sem": 1,
+                "current_batch": 1,
+                "created_at": 1
+            }
+        }
+    ]
+    
     if sem_id:
-        enrollments = await db.student_enrollments.find(
-            {"sem_id": sem_id, "status": "active"}
-        ).to_list(None)
-        student_ids = [e["student_id"] for e in enrollments]
-        query = {"_id": {"$in": student_ids}}
-    elif dept_id:
-        query = {"dept_id": dept_id}
-    else:
-        query = {}
-
-    students = await db.student_details.find(query).to_list(None)
-    return [student_entity(s) for s in students]
+        pipeline.insert(1, {"$match": {"active_enrollment.sem_id": sem_id}})
+    if dept_id:
+        pipeline.insert(1, {"$match": {"dept_id": dept_id}})
+    
+    return await db.student_details.aggregate(pipeline).to_list(None)
 
 async def get_my_profile(current_user):
     student_id = current_user["user_id"]
