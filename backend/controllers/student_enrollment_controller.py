@@ -39,14 +39,33 @@ async def get_sem_students(sem_id: str, batch_id: str = None):
 
     pipeline = [
         {"$match": match_query},
-        {"$lookup": {"from": "student_details", "localField": "student_id", "foreignField": "_id", "as": "student"}},
+        {
+            "$lookup": {
+                "from": "student_details",
+                "localField": "student_id",
+                "foreignField": "_id",
+                "as": "student"
+            }
+        },
         {"$unwind": "$student"},
-        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {
+            "$lookup": {
+                "from": "batches",
+                "localField": "batch_id",
+                "foreignField": "_id",
+                "as": "batch"
+            }
+        },
         {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
         {
             "$project": {
-                "_id": "$student._id", "first_name": "$student.first_name", "last_name": "$student.last_name",
-                "roll_no": "$student.roll_no", "batch_name": "$batch.name"
+                "_id": "$student._id",
+                "first_name": "$student.first_name",
+                "last_name": "$student.last_name",
+                "roll_no": "$student.roll_no",
+                "batch_id": 1,
+                "batch_name": {"$ifNull": ["$batch.name", None]},
+                "is_theory": {"$eq": [{"$ifNull": ["$batch_id", None]}, None]}
             }
         }
     ]

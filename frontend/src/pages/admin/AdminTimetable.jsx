@@ -145,7 +145,32 @@ const AdminTimetable = () => {
 
   const groupedSlots = useMemo(() => {
     return DAYS.reduce((acc, day) => {
-      acc[day] = filteredSlots.filter(s => s.day_of_week === day).sort((a, b) => a.start_time?.localeCompare(b.start_time));
+      acc[day] = filteredSlots
+        .filter(s => s.day_of_week === day)
+        .sort((a, b) => {
+          const timeA = a.start_time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+          const timeB = b.start_time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+
+          if (!timeA || !timeB) return 0;
+
+          let hoursA = parseInt(timeA[1]);
+          const minutesA = parseInt(timeA[2]);
+          const isPMA = timeA[3].toUpperCase() === 'PM';
+
+          let hoursB = parseInt(timeB[1]);
+          const minutesB = parseInt(timeB[2]);
+          const isPMB = timeB[3].toUpperCase() === 'PM';
+
+          if (isPMA && hoursA !== 12) hoursA += 12;
+          if (!isPMA && hoursA === 12) hoursA = 0;
+          if (isPMB && hoursB !== 12) hoursB += 12;
+          if (!isPMB && hoursB === 12) hoursB = 0;
+
+          const totalMinutesA = hoursA * 60 + minutesA;
+          const totalMinutesB = hoursB * 60 + minutesB;
+
+          return totalMinutesA - totalMinutesB;
+        });
       return acc;
     }, {});
   }, [filteredSlots]);
@@ -356,11 +381,11 @@ const AdminTimetable = () => {
                                 <User size={12} className="text-zinc-400" />
                                 <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{formatName(slot.teacher_name)}</span>
                               </div>
+                              {slot.batch_name && slot.batch_name === 'Theory (All Batches)' && (
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg">Theory (All Batches)</span>
+                              )}
                               {slot.batch_name && slot.batch_name !== 'Theory (All Batches)' && (
-                                <div className="flex items-center gap-1.5">
-                                  <Hash size={12} className="text-emerald-500" />
-                                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg">{slot.batch_name}</span>
-                                </div>
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg">Lab (Batch {slot.batch_name})</span>
                               )}
                             </div>
                           </div>

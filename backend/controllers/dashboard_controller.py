@@ -76,12 +76,22 @@ async def get_teacher_dashboard(current_user):
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     today_day = datetime.utcnow().strftime("%A")
 
-    total_courses, total_sessions, todays_sessions, recent_sessions = await asyncio.gather(
-        db.course_teachers.count_documents({"teacher_id": teacher_id}),
-        db.attendance_sessions.count_documents({"teacher_id": teacher_id}),
-        db.attendance_sessions.count_documents({"teacher_id": teacher_id, "date": {"$gte": today}}),
-        db.attendance_sessions.find({"teacher_id": teacher_id}).sort("date", -1).limit(5).to_list(None),
-    )
+    teacher_info = await db.teacher_details.find_one({"_id": teacher_id})
+    teacher_name = f"{teacher_info.get('first_name', '')} {teacher_info.get('last_name', '')}" if teacher_info else "Teacher"
+
+    unique_courses_pipeline = [
+        {"$match": {"teacher_id": teacher_id}},
+        {"$group": {"_id": "$course_id"}},
+        {"$count": "total"}
+    ]
+
+    total_courses_result = await db.course_teachers.aggregate(unique_courses_pipeline).to_list(None)
+    total_courses = total_courses_result[0]["total"] if total_courses_result else 0
+
+    total_sessions = await db.attendance_sessions.count_documents({"teacher_id": teacher_id})
+    todays_sessions = await db.attendance_sessions.count_documents({"teacher_id": teacher_id, "date": {"$gte": today}})
+
+    recent_sessions = await db.attendance_sessions.find({"teacher_id": teacher_id}).sort("date", -1).limit(5).to_list(None)
 
     todays_slots_pipeline = [
         {"$match": {"teacher_id": teacher_id, "day_of_week": today_day, "is_active": True}},
@@ -89,10 +99,12 @@ async def get_teacher_dashboard(current_user):
         {"$unwind": "$course"},
         {"$lookup": {"from": "semesters", "localField": "sem_id", "foreignField": "_id", "as": "semester"}},
         {"$unwind": "$semester"},
+        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
         {"$project": {
-            "_id": 1, "start_time": 1, "end_time": 1,
+            "_id": 1, "start_time": 1, "end_time": 1, "course_id": "$course._id",
             "course_name": "$course.name", "course_code": "$course.course_code",
-            "sem_number": "$semester.sem_number"
+            "sem_number": "$semester.sem_number", "batch_name": "$batch.name"
         }},
         {"$sort": {"start_time": 1}}
     ]
@@ -113,6 +125,13 @@ async def get_teacher_dashboard(current_user):
         db.course_teachers.aggregate(total_students_pipeline).to_list(None),
     )
 
+    unique_slots = []
+    seen_courses = set()
+    for slot in todays_slots:
+        if slot["course_id"] not in seen_courses:
+            seen_courses.add(slot["course_id"])
+            unique_slots.append(slot)
+
     total_students = students_result[0]["total"] if students_result else 0
 
     sessions_with_course = []
@@ -126,13 +145,14 @@ async def get_teacher_dashboard(current_user):
         })
 
     return {
+        "teacher_name": teacher_name,
         "stats": {
             "total_courses": total_courses,
             "total_students": total_students,
             "total_sessions": total_sessions,
             "todays_sessions": todays_sessions,
         },
-        "todays_slots": todays_slots,
+        "todays_slots": unique_slots,
         "recent_sessions": sessions_with_course,
     }
 

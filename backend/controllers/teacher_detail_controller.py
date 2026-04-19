@@ -183,12 +183,20 @@ async def get_my_profile(current_user):
     if not teacher:
         return {"error": "Teacher not found"}
 
-    user, dept, total_courses, total_sessions = await asyncio.gather(
+    user, dept = await asyncio.gather(
         db.users.find_one({"_id": teacher_id}),
         db.departments.find_one({"_id": teacher["dept_id"]}),
-        db.course_teachers.count_documents({"teacher_id": teacher_id}),
-        db.attendance_sessions.count_documents({"teacher_id": teacher_id}),
     )
+
+    unique_courses_pipeline = [
+        {"$match": {"teacher_id": teacher_id}},
+        {"$group": {"_id": "$course_id"}},
+        {"$count": "total"}
+    ]
+    total_courses_result = await db.course_teachers.aggregate(unique_courses_pipeline).to_list(None)
+    total_courses = total_courses_result[0]["total"] if total_courses_result else 0
+
+    total_sessions = await db.attendance_sessions.count_documents({"teacher_id": teacher_id})
 
     total_students_pipeline = [
         {"$match": {"teacher_id": teacher_id}},

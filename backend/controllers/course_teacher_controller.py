@@ -70,18 +70,41 @@ async def remove_teacher(current_user, ct_id: str):
     return {"message": "Teacher removed"}
 
 async def get_course_teachers(course_id: str):
-    pipeline = [
-        {"$match": {"course_id": course_id}},
-        {"$lookup": {"from": "teacher_details", "localField": "teacher_id", "foreignField": "_id", "as": "teacher"}},
-        {"$unwind": "$teacher"},
-        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
-        {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
-        {
-            "$project": {
-                "_id": 1, "course_id": 1, "teacher_id": 1, "batch_id": 1, "is_primary": 1, "assigned_at": 1,
-                "first_name": "$teacher.first_name", "last_name": "$teacher.last_name", "faculty_id": "$teacher.faculty_id",
-                "batch_name": "$batch.name"
-            }
-        }
-    ]
-    return await db.course_teachers.aggregate(pipeline).to_list(None)
+    course_teachers = await db.course_teachers.find({"course_id": course_id}).to_list(None)
+    
+    result = []
+    for ct in course_teachers:
+        teacher = await db.teacher_details.find_one({"_id": ct["teacher_id"]})
+        if not teacher:
+            continue
+        
+        batch_name = None
+        batch_id = ct.get("batch_id")
+        
+        if batch_id is not None:
+            batch = await db.batches.find_one({"_id": batch_id})
+            if batch:
+                batch_name = batch.get("name")
+        
+        first_name = teacher.get("first_name", "")
+        last_name = teacher.get("last_name", "")
+        
+        if first_name:
+            first_name = first_name[0].upper() + first_name[1:].lower()
+        if last_name:
+            last_name = last_name[0].upper() + last_name[1:].lower()
+        
+        result.append({
+            "_id": ct["_id"],
+            "course_id": ct["course_id"],
+            "teacher_id": ct["teacher_id"],
+            "batch_id": batch_id,
+            "is_primary": ct.get("is_primary", False),
+            "assigned_at": ct.get("assigned_at"),
+            "first_name": first_name,
+            "last_name": last_name,
+            "faculty_id": teacher.get("faculty_id"),
+            "batch_name": batch_name
+        })
+    
+    return result
