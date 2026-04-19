@@ -106,7 +106,6 @@ const Header = () => {
                 onClick={toggleMode}
                 className="h-8 w-8 sm:h-10 sm:w-10 p-0 rounded-xl sm:rounded-2xl border-none bg-zinc-100 dark:bg-zinc-800"
                 icon={isDark ? Sun : Moon}
-                iconSize={16}
               />
 
               {user && (

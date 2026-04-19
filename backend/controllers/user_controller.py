@@ -20,16 +20,22 @@ async def create_user(data):
     return user_entity(user_data)
 
 async def login_user(data):
-    user = await db.users.find_one({"email": data["email"].lower().strip()})
+    email = data["email"].lower().strip()
+    password = data["password"]
+    
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+    
+    user = await db.users.find_one({"email": email})
     if not user:
-        return {"error": "Invalid credentials"}
-
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
     if not user.get("is_active", True):
-        return {"error": "Account disabled"}
-
-    if not verify_password(data["password"], user["password"]):
-        return {"error": "Invalid credentials"}
-
+        raise HTTPException(status_code=403, detail="Your account has been disabled. Please contact administrator.")
+    
+    if not verify_password(password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
     token = create_access_token({
         "user_id": str(user["_id"]),
         "role": user["role"]
@@ -50,7 +56,7 @@ async def login_user(data):
         "token_type": "bearer",
         "user": user_entity(user)
     }
-
+    
 async def delete_user(current_user, user_id: str):
     user = await db.users.find_one({"_id": user_id})
     if not user:

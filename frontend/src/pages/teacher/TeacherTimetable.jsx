@@ -16,55 +16,70 @@ const TeacherTimetable = () => {
     refetchOnReconnect: false,
   })
 
-  const grouped = useMemo(() => DAYS.reduce((acc, day) => {
-    acc[day] = slots.filter(s => s.day_of_week === day)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time))
-    return acc
-  }, {}), [slots])
+  const grouped = useMemo(() => {
+    const result = DAYS.reduce((acc, day) => {
+      acc[day] = slots.filter(s => s.day_of_week === day)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      return acc
+    }, {})
+    return result
+  }, [slots])
 
-  const activeDays = useMemo(() => DAYS.filter(d => grouped[d].length > 0), [grouped])
+  const activeDays = useMemo(() => DAYS.filter(d => grouped[d] && grouped[d].length > 0), [grouped])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {[1, 2, 3].map(i => <div key={i} className="animate-pulse h-48 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800" />)}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pt-10 pb-20">
-      <div className="max-w-5xl mx-auto space-y-8">
-
-        <header className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-2xl shadow-violet-600/30">
-              <LayoutGrid size={32} />
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900 pt-6 pb-20 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-8 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 p-6 shadow-xl">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                <LayoutGrid size={28} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter dark:text-white">
+                  My <span className="text-violet-600">Timetable</span>
+                </h1>
+                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mt-1">
+                  {slots.length} Weekly sessions scheduled
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter dark:text-white">
-                Academic <span className="text-violet-600">Schedule</span>
-              </h1>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mt-1 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {slots.length} Weekly sessions indexed
-              </p>
+            <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm">
+              <Calendar size={16} className="text-violet-600" />
+              <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 px-5 py-2.5 rounded-2xl border border-zinc-100 dark:border-zinc-700">
-            <Calendar size={16} className="text-violet-600" />
-            <span className="text-xs font-black text-zinc-600 dark:text-zinc-200 uppercase tracking-widest">
-              {new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </span>
           </div>
         </header>
 
-        {isLoading ? (
-          <div className="space-y-6">
-            {[1, 2, 3].map(i => <div key={i} className="animate-pulse h-48 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800" />)}
-          </div>
-        ) : activeDays.length === 0 ? (
-          <div className="py-40 text-center opacity-25">
-            <Calendar size={64} strokeWidth={1} className="mx-auto mb-4" />
-            <p className="text-[12px] font-black uppercase tracking-[0.5em]">No Sessions Configured</p>
+        {activeDays.length === 0 ? (
+          <div className="py-32 text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+              <Calendar size={40} className="text-zinc-400" />
+            </div>
+            <p className="text-sm font-bold text-zinc-400 uppercase tracking-wider">No classes scheduled yet</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {activeDays.map(day => (
-              <TimetableDayGroup key={day} day={day} slots={grouped[day]} />
-            ))}
+          <div className="space-y-6">
+            {DAYS.map(day => {
+              const daySlots = grouped[day] || []
+              if (daySlots.length === 0) return null
+              return (
+                <TimetableDayGroup key={day} day={day} slots={daySlots} />
+              )
+            })}
           </div>
         )}
       </div>
