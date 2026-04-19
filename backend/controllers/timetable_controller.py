@@ -137,30 +137,56 @@ async def delete_slot(current_user, slot_id: str):
     await db.timetable.delete_one({"_id": slot_id})
     return {"message": "Slot deleted"}
 
-async def get_my_timetable(current_user):
-    teacher_id = current_user.get("user_id")
+async def get_teacher_timetable(teacher_id: str):
     pipeline = [
         {"$match": {"teacher_id": teacher_id, "is_active": True}},
-        {"$lookup": {"from": "courses", "localField": "course_id", "foreignField": "_id", "as": "course"}},
+        {
+            "$lookup": {
+                "from": "courses",
+                "localField": "course_id",
+                "foreignField": "_id",
+                "as": "course"
+            }
+        },
         {"$unwind": "$course"},
-        {"$lookup": {"from": "semesters", "localField": "sem_id", "foreignField": "_id", "as": "semester"}},
+        {
+            "$lookup": {
+                "from": "semesters",
+                "localField": "sem_id",
+                "foreignField": "_id",
+                "as": "semester"
+            }
+        },
         {"$unwind": "$semester"},
-        {"$lookup": {"from": "batches", "localField": "batch_id", "foreignField": "_id", "as": "batch"}},
+        {
+            "$lookup": {
+                "from": "batches",
+                "localField": "batch_id",
+                "foreignField": "_id",
+                "as": "batch"
+            }
+        },
         {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
         {
             "$project": {
-                "_id": 1, "day_of_week": 1, "start_time": 1, "end_time": 1,
-                "course_id": 1, "sem_id": 1, "teacher_id": 1, "batch_id": 1,
+                "_id": 1,
+                "course_id": 1,
                 "course_name": "$course.name",
                 "course_code": "$course.course_code",
+                "sem_id": 1,
                 "sem_number": "$semester.sem_number",
-                "batch_name": {"$ifNull": ["$batch.name", None]}
+                "batch_id": 1,
+                "batch_name": "$batch.name",
+                "day_of_week": 1,
+                "start_time": 1,
+                "end_time": 1,
+                "is_active": 1
             }
         },
         {"$sort": {"day_of_week": 1, "start_time": 1}}
     ]
     return await db.timetable.aggregate(pipeline).to_list(None)
-    
+
 async def get_student_timetable(current_user):
     enrollment = await db.student_enrollments.find_one({"student_id": current_user["user_id"], "status": "active"})
     if not enrollment: return []

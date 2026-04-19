@@ -51,12 +51,37 @@ async def get_session_records(session_id: str):
         },
         {"$unwind": "$student"},
         {
+            "$lookup": {
+                "from": "batches",
+                "localField": "student.batch_id",
+                "foreignField": "_id",
+                "as": "batch"
+            }
+        },
+        {"$unwind": {"path": "$batch", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "departments",
+                "localField": "student.dept_id",
+                "foreignField": "_id",
+                "as": "department"
+            }
+        },
+        {"$unwind": {"path": "$department", "preserveNullAndEmptyArrays": True}},
+        {
             "$project": {
-                "_id": 1, "session_id": 1, "status": 1, "marked_at": 1,
+                "_id": 1,
+                "session_id": 1,
+                "status": 1,
+                "marked_at": 1,
                 "student_id": 1,
                 "roll_no": "$student.roll_no",
                 "first_name": "$student.first_name",
-                "last_name": "$student.last_name"
+                "last_name": "$student.last_name",
+                "batch_id": "$student.batch_id",
+                "batch_name": "$batch.name",
+                "department_id": "$student.dept_id",
+                "department_name": "$department.name"
             }
         }
     ]

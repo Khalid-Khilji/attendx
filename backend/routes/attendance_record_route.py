@@ -35,6 +35,6 @@ async def my_attendance(
 async def review_record(
     record_id: str,
     data: RecordReview,
-    current_user=Depends(role_required(["teacher"]))
+    current_user=Depends(role_required(["teacher", "admin"]))
 ):
     return await update_record_status(current_user, record_id, data.model_dump())

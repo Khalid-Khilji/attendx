@@ -5,7 +5,7 @@ from controllers.timetable_controller import (
     update_slot,
     delete_slot,
     get_sem_timetable,
-    get_my_timetable,
+    get_teacher_timetable,
     get_student_timetable
 )
 from utils.dependencies import role_required
@@ -45,7 +45,7 @@ async def sem_timetable(
 async def my_timetable(
     current_user=Depends(role_required(["teacher"]))
 ):
-    return await get_my_timetable(current_user)
+    return await get_teacher_timetable(current_user["user_id"])
 
 # @router.get("/student")
 # async def student_timetable(

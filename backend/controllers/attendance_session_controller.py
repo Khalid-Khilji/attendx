@@ -1,10 +1,11 @@
 from db.database import db
-from models.attendance_session_model import session_create_model, session_entity
+from models.attendance_session_model import session_entity
 from models.attendance_record_model import record_create_model
 from utils.imagekit import upload_image
 from utils.face import process_frames
 from utils.logger import log_action
 from datetime import datetime, time, date
+import uuid
 
 async def create_session(current_user, data):
     slot = await db.timetable.find_one({"_id": data["timetable_id"], "is_active": True})
@@ -15,36 +16,48 @@ async def create_session(current_user, data):
     course_id = slot.get("course_id")
     sem_id = slot.get("sem_id")
     teacher_id = slot.get("teacher_id")
+    batch_id = slot.get("batch_id")
 
     course = await db.courses.find_one({"_id": course_id})
     course_name = course["name"] if course else "Unknown Course"
 
     session_date = data["date"]
+    
     if isinstance(session_date, date) and not isinstance(session_date, datetime):
-        query_date = datetime.combine(session_date, time.min)
+        query_date = datetime(session_date.year, session_date.month, session_date.day, 0, 0, 0)
     else:
         query_date = session_date
 
+    date_str = query_date.strftime("%Y-%m-%d")
+    
     existing = await db.attendance_sessions.find_one({
         "timetable_id": data["timetable_id"],
-        "date": query_date 
+        "$expr": {
+            "$eq": [
+                {"$dateToString": {"format": "%Y-%m-%d", "date": "$date"}},
+                date_str
+            ]
+        }
     })
     
     if existing:
-        return {"error": "Session already exists for this slot today"}
+        return {"error": f"Session already exists for {date_str}"}
 
-    session_data = session_create_model(
-        data["timetable_id"], 
-        course_id, 
-        sem_id, 
-        teacher_id, 
-        query_date,
-        data.get("group_photo")
-    )
+    session_data = {
+        "_id": str(uuid.uuid4()),
+        "timetable_id": data["timetable_id"],
+        "course_id": course_id,
+        "sem_id": sem_id,
+        "teacher_id": teacher_id,
+        "batch_id": batch_id,
+        "date": query_date,
+        "group_photo": data.get("group_photo"),
+        "created_at": datetime.utcnow()
+    }
     
     await db.attendance_sessions.insert_one(session_data)
     
-    display_date = session_date.strftime("%Y-%m-%d") if isinstance(session_date, date) else str(session_date)
+    display_date = query_date.strftime("%Y-%m-%d")
     
     await log_action(
         current_user, 
@@ -54,26 +67,120 @@ async def create_session(current_user, data):
         f"{course_name} ({display_date})"
     )
     
-    return session_entity(session_data)
+    return {
+        "_id": session_data["_id"],
+        "timetable_id": session_data["timetable_id"],
+        "course_id": session_data["course_id"],
+        "sem_id": session_data["sem_id"],
+        "teacher_id": session_data["teacher_id"],
+        "batch_id": session_data["batch_id"],
+        "date": session_data["date"],
+        "group_photo": session_data["group_photo"],
+        "created_at": session_data["created_at"]
+    }
 
 async def get_course_sessions(course_id: str):
-    sessions = await db.attendance_sessions.find(
-        {"course_id": course_id}
-    ).sort("date", -1).to_list(None)
-    return [session_entity(s) for s in sessions]
+    pipeline = [
+        {"$match": {"course_id": course_id}},
+        {"$sort": {"date": -1}},
+        {
+            "$lookup": {
+                "from": "courses",
+                "localField": "course_id",
+                "foreignField": "_id",
+                "as": "course_info"
+            }
+        },
+        {"$unwind": {"path": "$course_info", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "semesters",
+                "localField": "sem_id",
+                "foreignField": "_id",
+                "as": "semester_info"
+            }
+        },
+        {"$unwind": {"path": "$semester_info", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "batches",
+                "localField": "batch_id",
+                "foreignField": "_id",
+                "as": "batch_info"
+            }
+        },
+        {"$unwind": {"path": "$batch_info", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "teacher_details",
+                "localField": "teacher_id",
+                "foreignField": "_id",
+                "as": "teacher_info"
+            }
+        },
+        {"$unwind": {"path": "$teacher_info", "preserveNullAndEmptyArrays": True}},
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "teacher_info.user_id",
+                "foreignField": "_id",
+                "as": "user_info"
+            }
+        },
+        {"$unwind": {"path": "$user_info", "preserveNullAndEmptyArrays": True}},
+        {
+            "$project": {
+                "_id": 1,
+                "timetable_id": 1,
+                "course_id": 1,
+                "course_code": "$course_info.course_code",
+                "course_name": "$course_info.name",
+                "sem_id": 1,
+                "sem_number": "$semester_info.sem_number",
+                "teacher_id": 1,
+                "teacher_name": {
+                    "$concat": [
+                        {"$ifNull": ["$teacher_info.first_name", ""]},
+                        " ",
+                        {"$ifNull": ["$teacher_info.last_name", ""]}
+                    ]
+                },
+                "teacher_email": "$user_info.email",
+                "batch_id": 1,
+                "batch_name": "$batch_info.name",
+                "date": 1,
+                "group_photo": 1,
+                "created_at": 1
+            }
+        }
+    ]
+    return await db.attendance_sessions.aggregate(pipeline).to_list(None)
 
 async def mark_attendance_by_frames(current_user, session_id: str, frames):
     session = await db.attendance_sessions.find_one({"_id": session_id})
     if not session:
         return {"error": "Session not found"}
 
-    enrollments = await db.student_enrollments.find({
-        "sem_id": session["sem_id"],
-        "status": "active"
-    }).to_list(None)
-
-    if not enrollments:
-        return {"error": "No active enrollments found for this semester"}
+    batch_id = session.get("batch_id")
+    
+    if batch_id:
+        enrollments = await db.student_enrollments.find({
+            "batch_id": batch_id,
+            "status": "active"
+        }).to_list(None)
+        
+        if not enrollments:
+            batch = await db.batches.find_one({"_id": batch_id})
+            batch_name = batch["name"] if batch else batch_id
+            return {"error": f"No active students found in Batch {batch_name}"}
+    else:
+        enrollments = await db.student_enrollments.find({
+            "sem_id": session["sem_id"],
+            "status": "active"
+        }).to_list(None)
+        
+        if not enrollments:
+            return {"error": "No active enrollments found for this semester"}
 
     student_ids = [e["student_id"] for e in enrollments]
 
@@ -83,7 +190,7 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     }).to_list(None)
 
     if not students:
-        return {"error": "No students in this class have registered faces"}
+        return {"error": "No students in this batch have registered faces"}
 
     stored_embeddings = [
         {"student_id": s["_id"], "embedding": s["face_embedding"]}
@@ -96,18 +203,29 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
     if "error" in face_result:
         return face_result
 
-    results = face_result["results"]
+    detected_student_ids = [r["student_id"] for r in face_result["results"]]
     
-    student_map = {s["_id"]: s for s in students}
     results_with_names = []
+    student_map = {s["_id"]: s for s in students}
     
-    for r in results:
-        s_detail = student_map.get(r["student_id"], {})
-        results_with_names.append({
-            **r,
-            "name": f"{s_detail.get('first_name', '')} {s_detail.get('last_name', '')}".strip() or "Unknown",
-            "roll_no": s_detail.get("roll_no", "N/A")
-        })
+    for student in students:
+        if student["_id"] in detected_student_ids:
+            matched = next(r for r in face_result["results"] if r["student_id"] == student["_id"])
+            results_with_names.append({
+                "student_id": student["_id"],
+                "name": f"{student['first_name']} {student['last_name']}".strip(),
+                "roll_no": student["roll_no"],
+                "status": matched["status"],
+                "confidence": matched.get("confidence", 0.0)
+            })
+        else:
+            results_with_names.append({
+                "student_id": student["_id"],
+                "name": f"{student['first_name']} {student['last_name']}".strip(),
+                "roll_no": student["roll_no"],
+                "status": "absent",
+                "confidence": 0.0
+            })
 
     if frames_bytes:
         image_url = await upload_image(frames_bytes[0], f"sessions/{session_id}/frame.jpg")
@@ -117,12 +235,19 @@ async def mark_attendance_by_frames(current_user, session_id: str, frames):
                 {"$set": {"group_photo": image_url}}
             )
 
+    batch_name = None
+    if batch_id:
+        batch = await db.batches.find_one({"_id": batch_id})
+        batch_name = batch["name"] if batch else None
+
     return {
         "session_id": session_id,
+        "batch_id": batch_id,
+        "batch_name": batch_name,
         "total_students": len(results_with_names),
-        "present": sum(1 for r in results if r["status"] == "present"),
-        "review": sum(1 for r in results if r["status"] == "review"),
-        "absent": sum(1 for r in results if r["status"] == "absent"),
+        "present": sum(1 for r in results_with_names if r["status"] == "present"),
+        "review": sum(1 for r in results_with_names if r["status"] == "review"),
+        "absent": sum(1 for r in results_with_names if r["status"] == "absent"),
         "spoof_attempts": face_result["spoof_attempts"],
         "frames_processed": face_result["frames_processed"],
         "faces_detected": face_result["faces_detected"],
